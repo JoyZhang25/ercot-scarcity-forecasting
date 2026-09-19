@@ -1,0 +1,34 @@
+[research]
+hub = "HB_NORTH"
+decision_hour_ct = 9
+position_mw = 1.0
+direction = "virtual_supply"
+transaction_cost_per_mwh = 2.0
+
+[split]
+initial_train_end = "2023-12-31 23:00"
+validation_year = 2024
+shadow_year = 2025
+lockbox_start = "2026-01-01 00:00"
+lockbox_end = "2026-09-12 23:00"
+
+[signal]
+predicted_spread_threshold = -3.0
+max_positions_per_day = 1
+target_clip = 500.0
+
+[model]
+random_state = 7641
+max_iter = 120
+learning_rate = 0.04
+max_leaf_nodes = 15
+l2_regularization = 20.0
+
+[inference]
+bootstrap_repetitions = 5000
+bootstrap_seed = 7641
+hac_lags = 7
+
+[paths]
+price_archive_dir = "data/raw/ercot/archives"
+weather_dir = "data/raw/ercot/weather"

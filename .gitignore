@@ -19,3 +19,7 @@ outputs/benchmark/*
 !outputs/benchmark/figures/
 outputs/benchmark/figures/*
 !outputs/benchmark/figures/*.png
+!outputs/alpha/
+outputs/alpha/*
+!outputs/alpha/alpha_metrics.csv
+!outputs/alpha/alpha_manifest.json

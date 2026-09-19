@@ -25,6 +25,7 @@ dev = ["jupyter>=1.0", "nbconvert>=7.0", "pytest>=8.0"]
 
 [project.scripts]
 ercot-spike-benchmark = "ercot_spikes.experiment:main"
+ercot-alpha-research = "ercot_spikes.alpha_experiment:main"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
