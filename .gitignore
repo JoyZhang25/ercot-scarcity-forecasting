@@ -22,4 +22,5 @@ outputs/benchmark/figures/*
 !outputs/alpha/
 outputs/alpha/*
 !outputs/alpha/alpha_metrics.csv
+!outputs/alpha/alpha_baselines.csv
 !outputs/alpha/alpha_manifest.json

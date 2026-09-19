@@ -1,5 +1,6 @@
 {
-  "status": "candidate_signal_pending_lockbox",
+  "status": "candidate_signal_not_established",
+  "alpha_gate_passed": false,
   "economic_target": "hourly HB_NORTH RT minus DA spread",
   "trade": "1 MW virtual supply in at most one hour per operating day",
   "selection_rule": "choose the day's most-negative predicted RT-DA hour only when prediction <= -3.00 USD/MWh",
@@ -103,7 +104,9 @@
       "hac_t_statistic": 1.083375866894027,
       "max_drawdown": -1702.555,
       "positive_month_fraction": 0.9166666666666666,
-      "top_five_profit_days_share": 0.41985946207454317
+      "top_five_profit_days_share": 0.41985946207454317,
+      "net_pnl_ex_top_five_profit_days": -17.442499999999995,
+      "mean_net_pnl_ex_top_five_profit_days": -0.10140988372093021
     },
     {
       "period": "2025_shadow",
@@ -122,7 +125,74 @@
       "hac_t_statistic": 0.9018360331533614,
       "max_drawdown": -1533.1475,
       "positive_month_fraction": 0.6666666666666666,
-      "top_five_profit_days_share": 0.19302330298362314
+      "top_five_profit_days_share": 0.19302330298362314,
+      "net_pnl_ex_top_five_profit_days": 418.9449999999997,
+      "mean_net_pnl_ex_top_five_profit_days": 1.5574163568773223
+    },
+    {
+      "period": "2026_lockbox",
+      "fit_end": "2025-12-31 23:00",
+      "prediction_start": "2026-01-01 00:00:00",
+      "prediction_end": "2026-09-12 23:00:00",
+      "observations": 6119,
+      "trades": 111,
+      "gross_pnl": 1749.2699999999998,
+      "net_pnl": 1527.2699999999998,
+      "mean_net_pnl_per_mwh": 13.759189189189186,
+      "mean_net_pnl_ci_95_low": -21.153983737947662,
+      "mean_net_pnl_ci_95_high": 52.99949890350877,
+      "win_rate": 0.7117117117117117,
+      "annualized_daily_sharpe": 0.8790471248831995,
+      "hac_t_statistic": 1.1073389048913824,
+      "max_drawdown": -1236.4125,
+      "positive_month_fraction": 0.7777777777777778,
+      "top_five_profit_days_share": 0.6238406201767636,
+      "net_pnl_ex_top_five_profit_days": -743.2650000000001,
+      "mean_net_pnl_ex_top_five_profit_days": -7.011933962264152
+    }
+  ],
+  "randomized_baselines": [
+    {
+      "period": "2024_validation",
+      "trades": 177,
+      "observed_mean_net_pnl": 12.821200564971749,
+      "all_hour_virtual_supply_mean": -0.8272024080610271,
+      "random_hour_same_days_mean": 1.9544943954802256,
+      "random_hour_same_days_ci_95_low": -10.899574152542376,
+      "random_hour_same_days_ci_95_high": 11.813887711864409,
+      "random_hour_same_days_one_sided_p": 0.016596680663867228,
+      "random_date_hour_equal_turnover_mean": -0.674255824858757,
+      "random_date_hour_equal_turnover_ci_95_low": -10.534135593220343,
+      "random_date_hour_equal_turnover_ci_95_high": 8.467783898305086,
+      "random_date_hour_equal_turnover_one_sided_p": 0.003599280143971206
+    },
+    {
+      "period": "2025_shadow",
+      "trades": 274,
+      "observed_mean_net_pnl": 4.8285218978102185,
+      "all_hour_virtual_supply_mean": -1.075664459413175,
+      "random_hour_same_days_mean": -0.4006809014598541,
+      "random_hour_same_days_ci_95_low": -5.9236279653284685,
+      "random_hour_same_days_ci_95_high": 2.803704835766422,
+      "random_hour_same_days_one_sided_p": 0.0009998000399920016,
+      "random_date_hour_equal_turnover_mean": -1.0425301167883212,
+      "random_date_hour_equal_turnover_ci_95_low": -7.420968749999998,
+      "random_date_hour_equal_turnover_ci_95_high": 2.2795859945255463,
+      "random_date_hour_equal_turnover_one_sided_p": 0.0003999200159968006
+    },
+    {
+      "period": "2026_lockbox",
+      "trades": 111,
+      "observed_mean_net_pnl": 13.759189189189186,
+      "all_hour_virtual_supply_mean": 0.9031418532439942,
+      "random_hour_same_days_mean": 5.722001747747748,
+      "random_hour_same_days_ci_95_low": -5.94042792792793,
+      "random_hour_same_days_ci_95_high": 18.092251689189187,
+      "random_hour_same_days_one_sided_p": 0.1241751649670066,
+      "random_date_hour_equal_turnover_mean": 0.7678752027027027,
+      "random_date_hour_equal_turnover_ci_95_low": -8.518132882882881,
+      "random_date_hour_equal_turnover_ci_95_high": 13.548791666666663,
+      "random_date_hour_equal_turnover_one_sided_p": 0.02399520095980804
     }
   ]
 }

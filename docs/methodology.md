@@ -68,3 +68,24 @@ The pre-auction risk score is sorted into deciles and compared with the realized
 virtual-load spread \(P^{RT}-P^{DA}\). The statistic is descriptive and receives a
 daily block-bootstrap interval. It omits bid curves, market impact, uplift, credit,
 fees, and execution constraints, so it is not labeled a tradable backtest.
+
+## Prospective spread-alpha extension
+
+The trading extension estimates the clipped conditional mean of hourly
+\(P^{RT}-P^{DA}\) rather than reusing the spike label.  At 09:00 CT on D-1 it may
+use fixed 48-hour temperature vintages, calendar structure, price/spread histories
+ending by D-2, and the prior operating day's already-cleared DAM curve.  It may not
+use the target operating day's DAM clearing price.
+
+Histogram gradient boosting is refit at each year boundary.  The frozen rule takes
+at most one 1 MW virtual-supply position per operating day when the day's minimum
+predicted spread is no greater than -$3/MWh, then deducts a $2/MWh hurdle.  The
+rule was developed on 2021-2024, treated 2025 as a shadow period because its spread
+direction had been partially exposed, and used 2026-01-01 through 2026-09-12 as a
+prospective lockbox.
+
+Evaluation reports net dollars per traded MWh, daily Sharpe, maximum drawdown,
+Newey-West t-statistic, operating-day block-bootstrap intervals, monthly stability,
+top-five-day concentration, and random date/hour equal-turnover baselines.  The
+2026 point estimate is positive, but the confidence interval crosses zero and the
+top five days dominate; the protocol therefore rejects an established-alpha claim.

@@ -14,8 +14,10 @@ from .alpha import (
     config_manifest,
     fit_and_predict,
     load_alpha_config,
+    randomized_baseline_metrics,
     strategy_metrics,
 )
+from .alpha_plotting import plot_alpha_audit
 
 
 def _period(
@@ -78,22 +80,51 @@ def run(config_path: str | Path, output_dir: str | Path) -> dict[str, object]:
         )
 
     metrics: list[dict[str, object]] = []
+    baselines: list[dict[str, object]] = []
     predictions: list[pd.DataFrame] = []
     for specification in periods:
         result, strategy = _period(frame, features, config, **specification)
         metrics.append(result)
+        baselines.append(
+            {
+                "period": specification["name"],
+                **randomized_baseline_metrics(strategy, config),
+            }
+        )
         strategy.insert(0, "period", specification["name"])
         predictions.append(strategy)
 
     metrics_frame = pd.DataFrame(metrics)
+    baselines_frame = pd.DataFrame(baselines)
     metrics_frame.to_csv(output / "alpha_metrics.csv", index=False)
-    pd.concat(predictions).to_csv(
+    baselines_frame.to_csv(output / "alpha_baselines.csv", index=False)
+    all_predictions = pd.concat(predictions)
+    all_predictions.to_csv(
         output / "alpha_predictions.csv", index_label="timestamp"
     )
+    if "2026_lockbox" in metrics_frame["period"].values:
+        plot_alpha_audit(
+            metrics_frame,
+            all_predictions,
+            Path("reports/figures/alpha_audit.png"),
+        )
+    lockbox_metrics = metrics_frame.loc[
+        metrics_frame["period"].eq("2026_lockbox")
+    ]
+    alpha_gate_passed = bool(
+        not lockbox_metrics.empty
+        and lockbox_metrics.iloc[0]["mean_net_pnl_per_mwh"] > 0
+        and lockbox_metrics.iloc[0]["mean_net_pnl_ci_95_low"] > 0
+    )
     manifest: dict[str, object] = {
-        "status": "candidate_signal_pending_lockbox"
-        if "2026_lockbox" not in metrics_frame["period"].values
-        else "lockbox_evaluated",
+        "status": (
+            "candidate_signal_pending_lockbox"
+            if lockbox_metrics.empty
+            else "alpha_gate_passed"
+            if alpha_gate_passed
+            else "candidate_signal_not_established"
+        ),
+        "alpha_gate_passed": alpha_gate_passed,
         "economic_target": "hourly HB_NORTH RT minus DA spread",
         "trade": "1 MW virtual supply in at most one hour per operating day",
         "selection_rule": (
@@ -107,6 +138,7 @@ def run(config_path: str | Path, output_dir: str | Path) -> dict[str, object]:
         "features": features,
         "config": config_manifest(config),
         "periods": metrics,
+        "randomized_baselines": baselines,
     }
     with (output / "alpha_manifest.json").open("w", encoding="utf-8") as handle:
         json.dump(manifest, handle, indent=2)

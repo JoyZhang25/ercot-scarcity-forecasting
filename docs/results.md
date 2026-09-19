@@ -21,3 +21,18 @@ virtual-load alpha claim; the prespecified direction was wrong in this test year
 That distinction is the main research lesson: a model can identify stressful hours
 while the day-ahead auction prices the same risk more aggressively than the average
 real-time settlement. Reversing the trade after seeing this result would be post hoc.
+
+## Prospective alpha audit
+
+A separate model predicts `RT−DA` directly and trades at most one virtual-supply
+hour per day under a rule frozen before acquiring 2026 outcomes.  After a $2/MWh
+hurdle, the 2026 lockbox earns +$13.76/MWh across 111 positions, but the 95% daily
+block-bootstrap interval is [−$21.15, +$53.00], the HAC t-statistic is 1.11, and
+the five best days account for 62.4% of positive P&L.  Removing those five days
+changes the remaining mean to −$7.01/MWh.
+
+The selector beats an equal-turnover random date/hour null (one-sided p=0.024),
+so the point estimate is not devoid of information.  It does not beat a random
+hour conditional on the same selected dates at conventional levels (p=0.124), and
+it fails the preregistered uncertainty gate.  The result is an alpha candidate,
+not evidence of a stable deployable alpha.

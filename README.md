@@ -13,8 +13,11 @@ tomorrow's realized weather. This project asks a decision-relevant question:
 > **Using only information available by 09:00 CT on the previous day, can we
 > identify which next-day ERCOT hours will exceed $100/MWh in real time?**
 
-The answer is useful but deliberately qualified: the model finds operational tail
-risk; the 2025 experiment does **not** establish a standalone virtual-trading alpha.
+The answer is useful but deliberately qualified. The model finds operational tail
+risk. A separate, prospectively frozen virtual-supply study produces positive
+2026 P&L, but fails its own statistical and concentration gates. This repository
+therefore distinguishes **forecast skill**, an **alpha candidate**, and an
+**established alpha** rather than treating them as synonyms.
 
 ![Research design](reports/figures/research_design.svg)
 
@@ -92,17 +95,45 @@ market memory, and seasonal structure.
 
 ## Does the signal become alpha?
 
-Not by itself. The highest-risk decile contains far more price spikes, but its mean
-2025 RT−DA spread is −$6.59/MWh. Relative to all hours, the top-decile spread lift
-is −$4.14/MWh and its daily block-bootstrap interval lies below zero.
+Not by simply trading the spike score. The highest-risk decile contains far more
+price spikes, but its mean 2025 RT−DA spread is −$6.59/MWh. Relative to all hours,
+the top-decile spread lift is −$4.14/MWh and its daily block-bootstrap interval
+lies below zero.
 
 ![Risk lift and spread diagnostic](outputs/benchmark/figures/risk_lift.png)
 
-This is still economically meaningful: the naive virtual-load direction is wrong
-in this test. It suggests the day-ahead auction priced forecast stress more
-aggressively than the average real-time outcome. A post-hoc reversal into virtual
-supply would not be a valid alpha claim without a prespecified rule, bid curves,
-fees, uplift, market impact, and credit constraints.
+That failure motivates a second research design which predicts the economic target
+directly. The rule was committed before the 2026 outcomes were downloaded:
+
+> At 09:00 CT on D−1, forecast hourly `RT−DA`; if the day's most-negative forecast
+> is at most −$3/MWh, place one 1 MW virtual-supply position in that hour. Otherwise
+> do not trade. Deduct a $2/MWh research hurdle from every cleared position.
+
+| Walk-forward period | Role | Trades | Mean net P&L | Daily Sharpe | 95% daily-block CI |
+|---|---|---:|---:|---:|---:|
+| 2024 | validation | 177 | +$12.82/MWh | 1.20 | [−$9.16, +$32.15] |
+| 2025 | shadow | 274 | +$4.83/MWh | 0.82 | [−$8.48, +$13.93] |
+| **2026 YTD** | **prospective lockbox** | **111** | **+$13.76/MWh** | **0.88** | **[−$21.15, +$53.00]** |
+
+![Prospective alpha audit](reports/figures/alpha_audit.png)
+
+The 2026 point estimate is economically positive: $1,527 net on 111 hypothetical
+1 MW positions, with a 71.2% win rate. The model also beats an equal-turnover
+random date/hour baseline in the frozen sample (randomization p=0.024). But the
+more important robustness tests fail:
+
+- the block-bootstrap interval still includes zero and the HAC t-statistic is 1.11;
+- the five best days contribute 62.4% of positive P&L;
+- removing those five days changes the remaining mean to **−$7.01/MWh**;
+- conditional on the same trade dates, choosing the hour beats random only at
+  p=0.124.
+
+The correct verdict is therefore **positive but fragile candidate signal, not
+established alpha**. This is closer to buy-side research practice than reporting only a
+backtest Sharpe: the economic target is direct, the clock is point-in-time, the
+rule is frozen before the lockbox, costs are explicit, and failed inference is
+shown rather than hidden. The full preregistration and rejection rule are in the
+[alpha protocol](docs/alpha_protocol.md).
 
 ## Research design
 
@@ -119,8 +150,9 @@ uncertainty             daily block bootstrap for the RT−DA diagnostic
 The implementation demonstrates **rare-event classification, class weighting,
 regularized linear models, kernel SVMs, bagging, gradient boosting, neural
 networks, chronological validation, probability calibration, ablation-quality
-baselines, permutation importance, and block-bootstrap inference**—all within one
-coherent research question.
+baselines, permutation importance, direct spread regression, sparse position
+selection, randomized trading baselines, HAC inference, and block-bootstrap
+inference**—all within one coherent market question.
 
 Read the full [methodology](docs/methodology.md), [locked-test interpretation](docs/results.md),
 and [model card](docs/model-card.md). The
@@ -141,6 +173,10 @@ python -m venv .venv
   --config configs/experiment.toml \
   --output outputs/benchmark
 
+.venv/bin/ercot-alpha-research \
+  --config configs/alpha_lockbox.toml \
+  --output outputs/alpha
+
 .venv/bin/pytest
 ```
 
@@ -151,15 +187,18 @@ and the distinction between archived forecasts and realized system variables.
 
 ```text
 configs/experiment.toml             frozen target, clock, split, and seed
+configs/alpha_lockbox.toml           preregistered trading rule and alpha gate
 notebooks/                           recruiter-readable research narrative
 src/ercot_spikes/                    data, features, models, evaluation, figures
 tests/                               time alignment and model-contract tests
 outputs/benchmark/                   locked metrics, predictions, and figures
+outputs/alpha/                       alpha metrics, baselines, and manifest
 docs/                                methodology, results, and model limitations
 ```
 
 ## Scope
 
 This is a reproducible research project, not investment advice or an ERCOT
-operational tool. Results describe the specified hub, threshold, information set,
-and 2025 test regime; they are not a promise of future performance.
+operational tool. The virtual-supply diagnostic assumes a price-taking 1 MW offer
+that clears and does not model QSE fees, collateral, uplift, bid-curve
+non-clearance, or market impact. Results are not a promise of future performance.

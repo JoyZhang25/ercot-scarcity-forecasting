@@ -73,3 +73,34 @@ The repository will use the word **alpha** only if all of the following hold:
 Failure of any gate is reported as a candidate signal or negative result.  No
 threshold, direction, feature, or model may be changed after inspecting the 2026
 outcome and still be described as the same lockbox test.
+
+## Lockbox verdict
+
+The frozen rule was committed as `0a7b554` before the 2026 DAM and RTM archives
+were downloaded.  The 2026-01-01 through 2026-09-12 lockbox then produced 111
+positions and $1,527 net P&L after the research hurdle:
+
+| Diagnostic | 2026 lockbox |
+|---|---:|
+| Mean net P&L | +$13.76/MWh |
+| 95% daily-block interval | [-$21.15, +$53.00] |
+| Win rate | 71.2% |
+| Annualized daily Sharpe | 0.88 |
+| HAC t-statistic | 1.11 |
+| Maximum drawdown | -$1,236 |
+| Positive months | 7 of 9 |
+| Top-five share of positive P&L | 62.4% |
+| Mean after removing five best days | -$7.01/MWh |
+
+An equal-turnover random date/hour null exceeded the observed mean in 2.4% of
+simulations.  This suggests that the complete date-and-hour selector contains
+incremental information.  Conditional on the model's chosen trade dates, however,
+a random-hour null exceeded it in 12.4% of simulations.  The within-day timing
+component is therefore not independently convincing.
+
+The candidate fails the preregistered alpha gate because its primary uncertainty
+interval crosses zero and its profits are concentrated in a handful of tail days.
+The honest label is **economically interesting candidate signal, statistically
+unproven alpha**.  Retuning this test after seeing 2026 would invalidate the
+lockbox; additional evidence must come from a future period or a genuinely
+independent market.

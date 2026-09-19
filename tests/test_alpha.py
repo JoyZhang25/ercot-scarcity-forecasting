@@ -3,7 +3,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ercot_spikes.alpha import AlphaConfig, apply_frozen_rule, hac_t_statistic
+from ercot_spikes.alpha import (
+    AlphaConfig,
+    apply_frozen_rule,
+    hac_t_statistic,
+    randomized_baseline_metrics,
+)
 
 
 def config() -> AlphaConfig:
@@ -63,3 +68,19 @@ def test_frozen_rule_respects_no_trade_threshold() -> None:
 def test_hac_t_statistic_is_positive_for_positive_series() -> None:
     values = pd.Series([1.0, 0.5, 1.5, 0.75, 1.25] * 20)
     assert hac_t_statistic(values, lags=3) > 0
+
+
+def test_randomized_baselines_are_deterministic() -> None:
+    index = pd.date_range("2026-01-01", periods=72, freq="h")
+    frame = pd.DataFrame(
+        {
+            "predicted_spread": np.tile(np.linspace(-5, 5, 24), 3),
+            "spread": np.tile(np.linspace(-10, 10, 24), 3),
+        },
+        index=index,
+    )
+    strategy = apply_frozen_rule(frame, config())
+    first = randomized_baseline_metrics(strategy, config())
+    second = randomized_baseline_metrics(strategy, config())
+    assert first == second
+    assert first["trades"] == 3

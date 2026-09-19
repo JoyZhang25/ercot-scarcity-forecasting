@@ -17,6 +17,8 @@ PRICE_DOCUMENTS = {
         2023: 969805139,
         2024: 1065471230,
         2025: 1177737535,
+        # Snapshot posted 2026-09-13; frozen lockbox ends 2026-09-12.
+        2026: 1274016263,
     },
     "dam": {
         2021: 814918746,
@@ -24,6 +26,8 @@ PRICE_DOCUMENTS = {
         2023: 969803138,
         2024: 1065468714,
         2025: 1177667469,
+        # Snapshot posted 2026-09-13; frozen lockbox ends 2026-09-12.
+        2026: 1274009269,
     },
 }
 
@@ -73,18 +77,18 @@ def download_prices(root: Path) -> None:
             print(f"price: {path}")
 
 
-def download_weather(root: Path) -> None:
+def download_weather(root: Path, *, end_date: str, refresh: bool = False) -> None:
     destination = root / "ercot" / "weather"
     destination.mkdir(parents=True, exist_ok=True)
     url = "https://previous-runs-api.open-meteo.com/v1/forecast"
     for city, (latitude, longitude) in CITIES.items():
         path = destination / f"{city}.json"
-        if not path.exists():
+        if refresh or not path.exists():
             parameters = {
                 "latitude": latitude,
                 "longitude": longitude,
                 "start_date": "2021-01-01",
-                "end_date": "2025-12-31",
+                "end_date": end_date,
                 "hourly": ",".join(
                     [
                         "temperature_2m_previous_day2",
@@ -113,10 +117,24 @@ def download_load(root: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=Path("data/raw"))
+    parser.add_argument(
+        "--weather-end",
+        default="2026-09-12",
+        help="last delivery date for fixed-vintage weather (default: lockbox end)",
+    )
+    parser.add_argument(
+        "--refresh-weather",
+        action="store_true",
+        help="replace existing weather JSON instead of leaving it unchanged",
+    )
     args = parser.parse_args()
     download_prices(args.output)
     download_load(args.output)
-    download_weather(args.output)
+    download_weather(
+        args.output,
+        end_date=args.weather_end,
+        refresh=args.refresh_weather,
+    )
 
 
 if __name__ == "__main__":

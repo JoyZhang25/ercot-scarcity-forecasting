@@ -272,6 +272,24 @@ def strategy_metrics(strategy: pd.DataFrame, config: AlphaConfig) -> dict[str, f
     """Compute risk, stability, concentration, and inference diagnostics."""
     daily = _daily_pnl(strategy)
     traded = strategy.loc[strategy["position_mw"].ne(0)]
+    if traded.empty:
+        return {
+            "observations": int(len(strategy)),
+            "trades": 0,
+            "gross_pnl": 0.0,
+            "net_pnl": 0.0,
+            "mean_net_pnl_per_mwh": float("nan"),
+            "mean_net_pnl_ci_95_low": float("nan"),
+            "mean_net_pnl_ci_95_high": float("nan"),
+            "win_rate": float("nan"),
+            "annualized_daily_sharpe": float("nan"),
+            "hac_t_statistic": float("nan"),
+            "max_drawdown": 0.0,
+            "positive_month_fraction": 0.0,
+            "top_five_profit_days_share": float("nan"),
+            "net_pnl_ex_top_five_profit_days": 0.0,
+            "mean_net_pnl_ex_top_five_profit_days": float("nan"),
+        }
     cumulative = daily["net_pnl"].cumsum()
     drawdown = cumulative - cumulative.cummax()
     monthly = daily.copy()
@@ -286,6 +304,14 @@ def strategy_metrics(strategy: pd.DataFrame, config: AlphaConfig) -> dict[str, f
         else float("nan")
     )
     traded_mwh = float(traded["position_mw"].abs().sum())
+    top_five_timestamps = traded.nlargest(5, "net_pnl").index
+    without_top_five = traded.drop(index=top_five_timestamps)
+    remaining_mwh = float(without_top_five["position_mw"].abs().sum())
+    remaining_mean = (
+        float(without_top_five["net_pnl"].sum() / remaining_mwh)
+        if remaining_mwh > 0
+        else float("nan")
+    )
     interval_low, interval_high = daily_block_bootstrap_interval(strategy, config)
     daily_std = float(daily["net_pnl"].std())
     return {
@@ -304,6 +330,83 @@ def strategy_metrics(strategy: pd.DataFrame, config: AlphaConfig) -> dict[str, f
         "max_drawdown": float(drawdown.min()),
         "positive_month_fraction": float((monthly_pnl > 0).mean()),
         "top_five_profit_days_share": top_five_share,
+        "net_pnl_ex_top_five_profit_days": float(without_top_five["net_pnl"].sum()),
+        "mean_net_pnl_ex_top_five_profit_days": remaining_mean,
+    }
+
+
+def randomized_baseline_metrics(
+    strategy: pd.DataFrame, config: AlphaConfig
+) -> dict[str, float | int]:
+    """Compare the chosen hour with random hours, without retuning the signal.
+
+    The first baseline chooses a random hour on the exact dates traded by the
+    model, isolating the incremental value of within-day hour selection.  The
+    second chooses the same number of dates and one random hour on each date,
+    testing the full date-and-hour selection against an equal-turnover null.
+    """
+    traded = strategy.loc[strategy["position_mw"].ne(0)]
+    if traded.empty:
+        return {"trades": 0}
+    daily_groups = [
+        group for _, group in strategy.groupby("operating_date", sort=True)
+    ]
+    traded_dates = set(traded["operating_date"])
+    selected_groups = [
+        group
+        for group in daily_groups
+        if group["operating_date"].iat[0] in traded_dates
+    ]
+    repetitions = config.bootstrap_repetitions
+    rng = np.random.default_rng(config.bootstrap_seed)
+
+    def random_hour_matrix(groups: list[pd.DataFrame]) -> np.ndarray:
+        result = np.empty((repetitions, len(groups)))
+        for column, group in enumerate(groups):
+            hourly_supply_pnl = (
+                -config.position_mw * group["spread"].to_numpy()
+                - config.position_mw * config.transaction_cost_per_mwh
+            )
+            draws = rng.integers(0, len(hourly_supply_pnl), size=repetitions)
+            result[:, column] = hourly_supply_pnl[draws]
+        return result
+
+    same_day_mean = random_hour_matrix(selected_groups).mean(axis=1)
+    all_day_random_hours = random_hour_matrix(daily_groups)
+    equal_turnover_mean = np.empty(repetitions)
+    trade_count = len(selected_groups)
+    for repetition in range(repetitions):
+        sampled_dates = rng.choice(
+            len(daily_groups), size=trade_count, replace=False
+        )
+        equal_turnover_mean[repetition] = all_day_random_hours[
+            repetition, sampled_dates
+        ].mean()
+
+    observed = float(traded["net_pnl"].mean())
+
+    def summarize(distribution: np.ndarray, prefix: str) -> dict[str, float]:
+        low, high = np.quantile(distribution, [0.025, 0.975])
+        probability = (np.sum(distribution >= observed) + 1) / (
+            len(distribution) + 1
+        )
+        return {
+            f"{prefix}_mean": float(distribution.mean()),
+            f"{prefix}_ci_95_low": float(low),
+            f"{prefix}_ci_95_high": float(high),
+            f"{prefix}_one_sided_p": float(probability),
+        }
+
+    all_hour_supply = (
+        -config.position_mw * strategy["spread"]
+        - config.position_mw * config.transaction_cost_per_mwh
+    )
+    return {
+        "trades": int(len(traded)),
+        "observed_mean_net_pnl": observed,
+        "all_hour_virtual_supply_mean": float(all_hour_supply.mean()),
+        **summarize(same_day_mean, "random_hour_same_days"),
+        **summarize(equal_turnover_mean, "random_date_hour_equal_turnover"),
     }
 
 

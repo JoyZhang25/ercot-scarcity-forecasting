@@ -28,8 +28,12 @@ rejected on validation rather than silently retained.
 - The $100 threshold is economically interpretable but not a regulatory definition
   of scarcity.
 - Economic value is not implied by classification skill. The RT−DA diagnostic
-  rejects the prespecified virtual-load direction in 2025, but it is not a complete
-  executable P&L study and does not justify a post-hoc reversed trade.
+  rejects the prespecified virtual-load direction in 2025. A separately frozen
+  virtual-supply rule has positive 2026 lockbox P&L but fails its uncertainty and
+  concentration gates; it remains a candidate rather than an established alpha.
+- The alpha audit assumes a price-taking 1 MW offer that clears and omits QSE
+  charges, collateral, uplift allocation, bid-curve non-clearance, and market
+  impact. Its $2/MWh deduction is a research hurdle, not participant accounting.
 
 ## Monitoring
 
