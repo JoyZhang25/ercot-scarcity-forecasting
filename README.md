@@ -1,17 +1,18 @@
-# Scarcity Before the Spike
+# Forecasting Scarcity, Testing Alpha
 
-### Forecasting ERCOT tail risk—and testing whether the forecast survives market prices
+### Point-in-time machine learning for ERCOT price spikes and RT−DA virtual trading
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-2F80ED.svg)](https://www.python.org/)
 [![Tests](https://img.shields.io/badge/tests-pytest-1B998B.svg)](.github/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-102A43.svg)](LICENSE)
 
-**A market can be predictable without being mispriced.**
+**A good forecast is not necessarily a tradable signal.**
 
-In ERCOT, electricity cannot wait on a shelf. A routine $30/MWh hour can become
-a triple-digit scarcity event when weather-driven demand meets tight supply. This
-project asks whether those hours can be identified *before* the day-ahead auction—and
-then asks the harder question: did the auction already price the risk?
+ERCOT operates Texas's wholesale power market, where electricity cannot wait on
+a shelf. A routine $30/MWh hour can become a triple-digit scarcity event when
+weather-driven demand meets tight supply. This project asks whether those hours
+can be identified *before* the day-ahead auction—and then asks the harder
+question: did the auction already price the risk?
 
 | Research question | Out-of-sample verdict | Key evidence |
 |---|---|---|
