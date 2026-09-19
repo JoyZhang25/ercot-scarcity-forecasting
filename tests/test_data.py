@@ -1,61 +1,42 @@
-import numpy as np
 import pandas as pd
+from pathlib import Path
 
-from market_news.data import build_daily_panel, temporal_split
-
-
-def _market(n: int = 80) -> pd.DataFrame:
-    dates = pd.bdate_range("2020-01-01", periods=n)
-    close = 100.0 * np.exp(np.linspace(0.0, 0.2, n))
-    return pd.DataFrame({"date": dates, "close": close})
+from ercot_spikes.config import ExperimentConfig
+from ercot_spikes.data import _hour_number, _timestamp, chronological_split
 
 
-def _headlines(market: pd.DataFrame) -> pd.DataFrame:
-    return pd.DataFrame(
-        {"date": market["date"], "headline": [f"headline-{i}" for i in range(len(market))]}
+def config() -> ExperimentConfig:
+    return ExperimentConfig(
+        hub="HB_NORTH",
+        spike_threshold=100.0,
+        decision_hour_ct=9,
+        minimum_lag_hours=48,
+        train_end="2023-12-31 23:00",
+        validation_end="2024-12-31 23:00",
+        test_end="2025-12-31 23:00",
+        random_state=7641,
+        top_risk_fraction=0.05,
+        price_archive_dir=Path("."),
+        weather_dir=Path("."),
+        load_archive_dir=Path("missing"),
     )
 
 
-def test_panel_stops_at_observed_headline_coverage() -> None:
-    market = _market()
-    headlines = _headlines(market.iloc[:60])
-    panel = build_daily_panel(headlines, market, execution_lag_days=1)
-    assert panel["outcome_date"].max() <= headlines["date"].max()
+def test_hour_ending_maps_to_hour_beginning() -> None:
+    dates = pd.Series(["01/02/2025", "01/02/2025"])
+    hours = pd.Series([1, "24:00"])
+    result = _timestamp(dates, hours)
+    assert result.iloc[0] == pd.Timestamp("2025-01-02 00:00")
+    assert result.iloc[1] == pd.Timestamp("2025-01-02 23:00")
 
 
-def test_target_respects_execution_lag() -> None:
-    market = _market()
-    panel = build_daily_panel(_headlines(market), market, execution_lag_days=1)
-    row = panel.iloc[0]
-    original_index = int(market.index[market["date"].eq(row["feature_date"])][0])
-    expected = np.log(market.loc[original_index + 2, "close"] / market.loc[original_index + 1, "close"])
-    assert row["execution_date"] == market.loc[original_index + 1, "date"]
-    assert row["outcome_date"] == market.loc[original_index + 2, "date"]
-    assert np.isclose(row["target_return"], expected)
+def test_hour_parser_accepts_both_ercot_formats() -> None:
+    assert _hour_number(pd.Series([1, "08:00", "24:00"])).tolist() == [1, 8, 24]
 
 
-def test_temporal_splits_do_not_cross_outcome_boundaries() -> None:
-    market = _market(120)
-    panel = build_daily_panel(_headlines(market), market, execution_lag_days=1)
-    train_end = panel.iloc[35]["outcome_date"]
-    validation_end = panel.iloc[60]["outcome_date"]
-    split = temporal_split(panel, train_end=train_end, validation_end=validation_end)
-    assert split.train["outcome_date"].max() <= train_end
-    assert split.validation["feature_date"].min() > train_end
-    assert split.validation["outcome_date"].max() <= validation_end
-    assert split.test["feature_date"].min() > validation_end
-
-
-def test_future_headline_change_does_not_change_past_features() -> None:
-    market = _market()
-    headlines = _headlines(market)
-    original = build_daily_panel(headlines, market, execution_lag_days=1)
-    changed = headlines.copy()
-    changed.loc[changed.index[-1], "headline"] = "future-only-token"
-    rebuilt = build_daily_panel(changed, market, execution_lag_days=1)
-    cutoff = market.iloc[-5]["date"]
-    columns = ["headline_text", "return_1d", "momentum_5d", "volatility_20d"]
-    pd.testing.assert_frame_equal(
-        original.loc[original.feature_date.lt(cutoff), columns].reset_index(drop=True),
-        rebuilt.loc[rebuilt.feature_date.lt(cutoff), columns].reset_index(drop=True),
-    )
+def test_chronological_split_has_no_overlap() -> None:
+    index = pd.date_range("2023-12-31 22:00", "2025-01-01 01:00", freq="h")
+    frame = pd.DataFrame({"x": range(len(index))}, index=index)
+    train, validation, test = chronological_split(frame, config())
+    assert train.index.max() < validation.index.min()
+    assert validation.index.max() < test.index.min()

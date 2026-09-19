@@ -1,67 +1,132 @@
-# Information or Noise?
+# Scarcity Before the Spike
 
-## Leakage-resistant S&P 500 forecasting with financial headlines
+### Point-in-time machine learning for next-day ERCOT price extremes
 
-**[Project site](https://joyzhang25.github.io/market-news-signal/)** · **[Locked-test results](docs/results.md)** · **[Reconstruction audit](docs/reconstruction-audit.md)**
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-2F80ED.svg)](https://www.python.org/)
+[![Tests](https://img.shields.io/badge/tests-pytest-1B998B.svg)](.github/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-102A43.svg)](LICENSE)
 
-This project asks a narrow question: **do dated financial headlines add out-of-sample predictive information beyond simple market-history features?** It is an independent reconstruction of a 2025 Georgia Tech team course project, redesigned for chronological validity, reproducibility, and honest statistical interpretation.
+Electricity is perishable. When Texas demand and supply approach the edge, a
+routine $30/MWh hour can become a triple-digit event before a trader can wait for
+tomorrow's realized weather. This project asks a decision-relevant question:
 
-The core contribution is the evaluation protocol, not a claim that a large neural network can beat the market.
+> **Using only information available by 09:00 CT on the previous day, can we
+> identify which next-day ERCOT hours will exceed $100/MWh in real time?**
 
-## Current finding
+The answer is useful but deliberately qualified: the model finds operational tail
+risk; the 2025 experiment does **not** establish a standalone virtual-trading alpha.
 
-On 542 held-out forecast dates from January 2022 through March 2024, the reconstruction finds **no reliable incremental predictive value from the released daily headlines**:
+![Research design](reports/figures/research_design.svg)
 
-| Model | ROC-AUC | Balanced accuracy | Log loss |
-|---|---:|---:|---:|
-| Historical prior | 0.500 | 0.500 | 0.7022 |
-| Market-only | 0.510 | 0.504 | 0.7160 |
-| Text-only | 0.488 | 0.500 | 0.7023 |
-| Market + text | 0.504 | 0.500 | 0.7160 |
+## The result in one minute
 
-The combined model's log-loss improvement over the market-only model is 0.00004, with a 95% moving-block-bootstrap interval of [-0.00111, 0.00112] and HAC p-value 0.94. Relative to the historical-prior forecast, the combined model is significantly worse on log loss. The evidence therefore does not support a forecasting or trading claim from this dataset and protocol.
+The model family was selected on 2024, then evaluated once on a locked 2025 test
+year: 8,759 hours, of which 235 (2.68%) were spikes.
 
-That null result is the substantive result: once the target clock, learned transformations, model selection, and test set are controlled, the apparent signal does not survive. See [`docs/results.md`](docs/results.md) for the complete interpretation and [`docs/reconstruction-audit.md`](docs/reconstruction-audit.md) for a traceable account of what changed from the course pipeline.
+| Locked 2025 result | Value | Interpretation |
+|---|---:|---|
+| Selected model | Gradient boosting | chosen on 2024 PR-AUC, not post-hoc on test |
+| PR-AUC | **0.095** | 3.5× the 0.0268 random-ranking baseline |
+| ROC-AUC | **0.816** | strong ranking across thresholds |
+| Highest-risk decile spike rate | **10.62%** | 4.0× the unconditional event rate |
+| Calibrated Brier score | **0.0254** | probability error after validation-only isotonic calibration |
+| Top-decile RT−DA spread lift | **−$4.14/MWh** | 95% daily block-bootstrap CI [−$7.67, −$0.42] |
+
+That last row matters. Hours can be predictably dangerous without being
+predictably mispriced: the day-ahead auction may already price the same weather and
+scarcity risk. The project keeps **forecasting skill** and **economic value** as two
+separate hypotheses.
+
+![Locked-year price and probability timeline](outputs/benchmark/figures/scarcity_timeline.png)
+
+## Why this is a machine-learning problem
+
+Spikes are rare, nonlinear, seasonal, and regime-dependent. Accuracy is the wrong
+score—predicting “no spike” every hour would be more than 97% accurate in 2025.
+The experiment therefore compares a controlled set of supervised learners using
+precision–recall AUC, calibration, and top-risk recall.
+
+![Model comparison](outputs/benchmark/figures/model_comparison.png)
+
+| Model family | 2024 validation PR-AUC | 2025 test PR-AUC |
+|---|---:|---:|
+| Seasonal hour/month prior | 0.056 | 0.066 |
+| Regularized logistic regression | 0.053 | 0.061 |
+| RBF support vector machine | 0.045 | 0.069 |
+| Random forest | 0.076 | 0.086 |
+| **Histogram gradient boosting** | **0.084** | **0.095** |
+| Gradient boosting + lagged load | 0.079 | 0.088 |
+| Two-layer neural network | 0.067 | 0.077 |
+
+Gradient boosting wins the 2024 selection period and remains best in 2025. The
+choice is nevertheless governed by validation—not by looking at test rankings.
+
+## What the model knew—and what it did not
+
+At the decision time, the feature set contains:
+
+- **forecast weather stress:** fixed 48-hour-lead GFS temperature vintages for
+  Dallas, Houston, Austin, San Antonio, and Midland; regional extrema and
+  heating/cooling degrees;
+- **lagged market state:** HB_NORTH prices at 48, 72, and 168 hours; shifted
+  seven-day level, volatility, maximum, and trailing spike frequency;
+- **calendar structure:** cyclical hour, weekday, and month encodings.
+
+The classifier does **not** receive realized target-day weather, contemporaneous
+load, target-hour real-time price, or day-ahead settlement price. DA price appears
+only in the economic diagnostic.
+
+An additional **retrospective lagged-load ablation** uses ERCOT annual native-load
+archives shifted by 48 hours. Because those annual files can include settlement
+revisions unavailable at the original decision time, the block is not eligible for
+primary-model selection. It also lowers 2024 validation PR-AUC from 0.084 to 0.079.
+This is feature ablation doing its job—more data is not automatically more signal.
+
+![Feature importance](outputs/benchmark/figures/feature_importance.png)
+
+Held-out permutation importance says the model primarily uses time-of-day,
+seasonality, the same hour one week earlier, the 48-hour price lag, price
+volatility, and Austin/Midland temperature forecasts. This is more informative than a generic “tree model
+worked” claim: the learned ranking is an interaction between physical stress,
+market memory, and seasonal structure.
+
+## Does the signal become alpha?
+
+Not by itself. The highest-risk decile contains far more price spikes, but its mean
+2025 RT−DA spread is −$6.59/MWh. Relative to all hours, the top-decile spread lift
+is −$4.14/MWh and its daily block-bootstrap interval lies below zero.
+
+![Risk lift and spread diagnostic](outputs/benchmark/figures/risk_lift.png)
+
+This is still economically meaningful: the naive virtual-load direction is wrong
+in this test. It suggests the day-ahead auction priced forecast stress more
+aggressively than the average real-time outcome. A post-hoc reversal into virtual
+supply would not be a valid alpha claim without a prespecified rule, bid curves,
+fees, uplift, market impact, and credit constraints.
 
 ## Research design
 
 ```text
-headlines dated t + prices through close t
-                    |
-                    v
-         market / text feature blocks
-                    |
-          one-session execution lag
-                    |
-                    v
-       predict close(t+2) / close(t+1)
+prediction clock        09:00 CT on operating day D−1
+target                  1{hourly HB_NORTH RT price on D > $100/MWh}
+training                2021–2023
+selection/calibration   2024
+locked test             2025
+primary metric          precision–recall AUC
+uncertainty             daily block bootstrap for the RT−DA diagnostic
 ```
 
-The one-session lag is deliberate: the headline source provides dates but not reliable publication times. Signals formed from all day-t headlines are therefore assumed tradable only at the close of t+1.
+The implementation demonstrates **rare-event classification, class weighting,
+regularized linear models, kernel SVMs, bagging, gradient boosting, neural
+networks, chronological validation, probability calibration, ablation-quality
+baselines, permutation importance, and block-bootstrap inference**—all within one
+coherent research question.
 
-The benchmark compares four nested specifications on a locked chronological test set:
-
-| Model | Information set |
-|---|---|
-| Prior | Historical up frequency |
-| Market | Lagged return, 5-day momentum, 20-day volatility, news intensity |
-| Text | Train-only TF-IDF headline features |
-| Combined | Market and text blocks |
-
-Regularization is selected on 2020-2021 data after training through 2019. Test evaluation begins in 2022. Preprocessing is encapsulated in scikit-learn pipelines so the vocabulary and scaling parameters cannot see validation or test observations during fitting.
-
-## Evidence standard
-
-The project reports:
-
-- log loss and Brier score for probability quality;
-- ROC-AUC, balanced accuracy, and macro-F1;
-- calibration curves;
-- moving-block-bootstrap confidence intervals for improvement over the market-only baseline;
-- a Newey-West/HAC test of the paired loss differential;
-- an explicitly illustrative, transaction-cost-adjusted long/short diagnostic.
-
-A small metric improvement is described as **incremental predictive evidence** only when its uncertainty supports that reading. It is not presented as persistent alpha.
+Read the full [methodology](docs/methodology.md), [locked-test interpretation](docs/results.md),
+and [model card](docs/model-card.md). The
+[research notebook](notebooks/ercot_price_spike_forecasting.ipynb) provides a
+guided, executable walkthrough; reusable logic lives in `src/ercot_spikes/` and is
+covered by tests.
 
 ## Reproduce
 
@@ -69,35 +134,32 @@ A small metric improvement is described as **incremental predictive evidence** o
 python -m venv .venv
 .venv/bin/pip install -e '.[dev]'
 
-market-news-benchmark \
-  --headlines data/raw/sp500_headlines_2008_2024.csv \
-  --market data/raw/fred_sp500.csv \
-  --config configs/benchmark.toml \
+# Public raw inputs are downloaded locally and remain outside Git.
+.venv/bin/python scripts/download_data.py
+
+.venv/bin/ercot-spike-benchmark \
+  --config configs/experiment.toml \
   --output outputs/benchmark
 
 .venv/bin/pytest
 ```
 
-Raw data is excluded from Git. See [`data/README.md`](data/README.md) for the schema, sources, licenses, and timing convention.
+See the [data contract](data/README.md) for source IDs, schemas, timing assumptions,
+and the distinction between archived forecasts and realized system variables.
 
-Data sources: [S&P 500 with Financial News Headlines (Kaggle)](https://www.kaggle.com/datasets/dyutidasmahaptra/s-and-p-500-with-financial-news-headlines-20082024) and [FRED S&P 500](https://fred.stlouisfed.org/series/SP500).
-
-## Repository structure
+## Repository map
 
 ```text
-configs/                 frozen experiment choices
-docs/                    methodology and model card
-src/market_news/         chronology, models, inference, and figures
-tests/                   target-alignment and leakage tests
-outputs/benchmark/       versioned locked-test metrics, predictions, figures, and manifest
+configs/experiment.toml             frozen target, clock, split, and seed
+notebooks/                           recruiter-readable research narrative
+src/ercot_spikes/                    data, features, models, evaluation, figures
+tests/                               time alignment and model-contract tests
+outputs/benchmark/                   locked metrics, predictions, and figures
+docs/                                methodology, results, and model limitations
 ```
 
-## What changed from the course project
+## Scope
 
-The original work explored sentence embeddings, HMM states, clustering, SMOTE, random forests, and LSTMs. That breadth was useful for learning, but several choices were not strong enough for a portfolio claim: random train/test splits appeared in parts of the pipeline, HMM smoothing obscured the forecast target, publication timing was not fully specified, and accuracy was reported without paired uncertainty or sufficiently strong baselines.
-
-This repository is rewritten from scratch around one falsifiable question. It removes retrospective HMM labels, uses an observable future return, enforces chronological boundaries by outcome date, and makes the market-only ablation the central comparison.
-
-## Disclaimer
-
-For research and educational use only. Nothing in this repository is investment advice.
+This is a reproducible research project, not investment advice or an ERCOT
+operational tool. Results describe the specified hub, threshold, information set,
+and 2025 test regime; they are not a promise of future performance.

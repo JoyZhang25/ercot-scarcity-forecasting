@@ -1,36 +1,28 @@
 import numpy as np
+import pandas as pd
 
-from market_news.evaluation import (
-    moving_block_indices,
-    newey_west_mean_test,
-    paired_block_bootstrap_log_loss,
-)
+from ercot_spikes.evaluation import classification_metrics, risk_bins
 
 
-def test_moving_block_indices_are_valid() -> None:
-    indices = moving_block_indices(23, 5, np.random.default_rng(7))
-    assert len(indices) == 23
-    assert indices.min() >= 0
-    assert indices.max() < 23
+def test_top_risk_metrics_reward_correct_ranking() -> None:
+    y = pd.Series([0, 0, 0, 1, 1])
+    probability = np.array([0.01, 0.02, 0.03, 0.8, 0.9])
+    metrics = classification_metrics(y, probability, top_fraction=0.4)
+    assert metrics["pr_auc"] == 1.0
+    assert metrics["recall_top_5pct"] == 1.0
 
 
-def test_bootstrap_detects_better_candidate() -> None:
-    y = np.array([0, 1] * 60)
-    baseline = np.full(len(y), 0.5)
-    candidate = np.where(y == 1, 0.8, 0.2)
-    result = paired_block_bootstrap_log_loss(
-        y,
-        baseline,
-        candidate,
-        reps=200,
-        block_length=6,
-        seed=3,
+def test_risk_bins_preserve_observations() -> None:
+    index = pd.date_range("2025-01-01", periods=20, freq="h")
+    frame = pd.DataFrame(
+        {
+            "probability": np.linspace(0.01, 0.9, 20),
+            "spike": [0] * 18 + [1, 1],
+            "rtm_price": np.arange(20),
+            "spread": np.arange(20) - 5,
+        },
+        index=index,
     )
-    assert result["mean_log_loss_improvement"] > 0
-    assert result["ci_2_5"] > 0
-
-
-def test_newey_west_mean_test_reports_direction() -> None:
-    result = newey_west_mean_test(np.linspace(0.01, 0.03, 80), max_lag=5)
-    assert result["hac_mean"] > 0
-    assert result["hac_t_stat"] > 0
+    result = risk_bins(frame, bins=5)
+    assert result["observations"].sum() == 20
+    assert result.iloc[-1]["realized_spike_rate"] > result.iloc[0]["realized_spike_rate"]

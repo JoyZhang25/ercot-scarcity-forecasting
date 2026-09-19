@@ -1,19 +1,20 @@
 cff-version: 1.2.0
 message: "If you use this software or protocol, please cite the repository."
-title: "Information or Noise? Leakage-resistant S&P 500 forecasting with financial headlines"
+title: "Scarcity Before the Spike: Point-in-time ERCOT price-spike forecasting"
 type: software
 authors:
   - family-names: Zhang
     given-names: Jingyi
     alias: Joy Zhang
-repository-code: "https://github.com/JoyZhang25/market-news-signal"
-url: "https://joyzhang25.github.io/market-news-signal/"
+repository-code: "https://github.com/JoyZhang25/ercot-scarcity-forecasting"
 license: MIT
-version: 0.1.0
+version: 0.2.0
 date-released: 2026-09-19
 keywords:
   - machine learning
-  - empirical finance
-  - natural language processing
-  - time-series validation
+  - electricity markets
+  - rare-event classification
+  - point-in-time backtesting
+  - probability calibration
+  - energy trading
   - reproducible research

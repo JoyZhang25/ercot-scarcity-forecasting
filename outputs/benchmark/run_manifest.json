@@ -1,53 +1,79 @@
 {
-  "config": {
-    "block_length": 10,
-    "bootstrap_reps": 1000,
-    "candidate_c": [
-      0.05,
-      0.1,
-      0.5,
-      1.0,
-      2.0
+  "research_question": "Can public information available before the day-ahead auction identify next-day HB_NORTH real-time price spikes?",
+  "target": "hourly RT price > $100/MWh",
+  "model_selection": {
+    "period": "2024",
+    "metric": "precision-recall AUC",
+    "eligible_models": [
+      "Gradient boosting",
+      "Random forest",
+      "Neural network",
+      "Seasonal prior",
+      "Logistic regression",
+      "RBF SVM"
     ],
-    "execution_lag_days": 1,
-    "seed": 2026,
-    "tfidf_max_features": 12000,
-    "tfidf_min_df": 3,
-    "tfidf_ngram_max": 2,
-    "train_end": "2019-12-31",
-    "transaction_cost_bps": 5.0,
-    "validation_end": "2021-12-31"
-  },
-  "date_ranges": {
-    "test": [
-      "2022-01-03",
-      "2024-03-04"
-    ],
-    "train": [
-      "2016-10-17",
-      "2019-12-31"
-    ],
-    "validation": [
-      "2020-01-02",
-      "2021-12-31"
+    "selection_ineligible_diagnostics": [
+      "Gradient boosting + lagged load"
     ]
   },
-  "input_hashes": {
-    "headlines_sha256": "45d72b46859dd8a3ed67f2895dc0a73de99f9cd817c0b2f07317cf4594688823",
-    "market_sha256": "6ab1d48d60c16f2b5c0ff51a8755f6c270245677a59953618902d972b294ab8e"
+  "selected_on_2024_validation": "Gradient boosting",
+  "selected_features": [
+    "temperature_2m_austin",
+    "temperature_2m_dallas",
+    "temperature_2m_houston",
+    "temperature_2m_midland",
+    "temperature_2m_sanantonio",
+    "temp_mean",
+    "temp_max",
+    "temp_min",
+    "cooling_degree",
+    "heating_degree",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "month_sin",
+    "month_cos",
+    "is_weekend",
+    "rt_price_lag_48h",
+    "rt_price_lag_72h",
+    "rt_price_lag_168h",
+    "rt_mean_7d",
+    "rt_vol_7d",
+    "rt_max_7d",
+    "recent_spike_rate_30d"
+  ],
+  "test_period": [
+    "2025-01-01 00:00:00",
+    "2025-12-31 23:00:00"
+  ],
+  "test_observations": 8759,
+  "test_spikes": 235,
+  "raw_selected_model_test_metrics": {
+    "pr_auc": 0.09473135279676907,
+    "roc_auc": 0.8155071537685833,
+    "brier": 0.08073364387182566,
+    "log_loss": 0.27025547399065053,
+    "precision_top_5pct": 0.1232876712328767,
+    "recall_top_5pct": 0.2297872340425532,
+    "base_rate": 0.02682954675191232
   },
-  "sample_counts": {
-    "headlines": 18153,
-    "market_sessions": 2085,
-    "panel": 1854,
-    "test": 542,
-    "train": 805,
-    "validation": 503
+  "calibrated_test_metrics": {
+    "pr_auc": 0.08440027198245431,
+    "roc_auc": 0.8095362780434717,
+    "brier": 0.02540113885336459,
+    "log_loss": 0.10934761377498114,
+    "precision_top_5pct": 0.11187214611872145,
+    "recall_top_5pct": 0.20851063829787234,
+    "base_rate": 0.02682954675191232
   },
-  "versions": {
-    "numpy": "2.5.3",
-    "pandas": "3.0.6",
-    "python": "3.12.14",
-    "scikit_learn": "1.9.1"
-  }
+  "top_decile_spread_lift": {
+    "estimate": -4.143602320684851,
+    "daily_block_bootstrap_95pct": [
+      -7.671351269765922,
+      -0.4223589973458701
+    ]
+  },
+  "timing_guardrail": "realized power-system variables are lagged at least 48 hours",
+  "random_state": 7641
 }

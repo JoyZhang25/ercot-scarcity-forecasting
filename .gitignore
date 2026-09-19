@@ -4,13 +4,18 @@ __pycache__/
 *.egg-info/
 *.py[cod]
 .venv/
+.ipynb_checkpoints/
 
 data/raw/*
 !data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
 outputs/*
 !outputs/.gitkeep
 !outputs/benchmark/
 outputs/benchmark/*
 !outputs/benchmark/*.csv
 !outputs/benchmark/*.json
-!outputs/benchmark/*.png
+!outputs/benchmark/figures/
+outputs/benchmark/figures/*
+!outputs/benchmark/figures/*.png

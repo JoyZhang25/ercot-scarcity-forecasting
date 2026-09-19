@@ -1,0 +1,19 @@
+[research]
+hub = "HB_NORTH"
+spike_threshold = 100.0
+decision_hour_ct = 9
+minimum_lag_hours = 48
+
+[split]
+train_end = "2023-12-31 23:00"
+validation_end = "2024-12-31 23:00"
+test_end = "2025-12-31 23:00"
+
+[model]
+random_state = 7641
+top_risk_fraction = 0.05
+
+[paths]
+price_archive_dir = "data/raw/ercot/archives"
+weather_dir = "data/raw/ercot/weather"
+load_archive_dir = "data/raw/ercot/load"

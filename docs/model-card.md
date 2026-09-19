@@ -2,28 +2,37 @@
 
 ## Intended use
 
-Research demonstration of leakage-resistant text-plus-market forecasting and temporal model evaluation.
+Research prototype for ranking next-day ERCOT HB_NORTH hours by the probability of
+an hourly real-time price above $100/MWh before the day-ahead auction. Appropriate
+uses include interview discussion, model-risk review, and reproducible research.
 
-## Out-of-scope uses
+## Not intended for
 
-- Live trading or investment advice.
-- Claims of causal news impact.
-- Claims that a statistically weak test-set improvement is a persistent alpha.
-- Predictions that assume intraday availability not supported by the source timestamps.
+Live dispatch, autonomous bidding, reliability operations, or investment advice.
+The model does not represent nodal congestion, bid-stack microstructure, outages,
+market impact, or participant-specific costs.
 
-## Main limitations
+## Selected specification
 
-- Daily headline dates do not identify the exact publication time.
-- The headline dataset is a curated third-party sample and may contain selection bias, revisions, or duplicates not visible in the released fields.
-- FRED's daily S&P 500 series begins in 2016, limiting the effective history.
-- Hyperparameters are selected on one validation era; regime-specific robustness remains limited.
-- The economic diagnostic omits bid-ask spreads, market impact, borrow constraints, taxes, and execution uncertainty.
+Histogram gradient boosting was selected on 2024 validation PR-AUC, then calibrated
+with validation-year isotonic regression. The untouched 2025 test contains 8,759
+hours and 235 labeled spikes. A retrospective lagged native-load feature block was
+tested, marked selection-ineligible because of possible settlement revisions, and
+rejected on validation rather than silently retained.
 
-## Reliability safeguards
+## Material limitations
 
-- Conservative one-session execution lag.
-- Outcome-date split boundaries.
-- All learned transformations live inside scikit-learn pipelines.
-- Locked test period.
-- Hashes and package versions recorded in `run_manifest.json`.
-- Paired block bootstrap and HAC inference for loss differences.
+- A hub price suppresses nodal congestion structure.
+- Weather forecasts are sampled at five cities, not every ERCOT weather zone.
+- Extreme-weather and policy regimes can shift faster than the training window.
+- The $100 threshold is economically interpretable but not a regulatory definition
+  of scarcity.
+- Economic value is not implied by classification skill. The RT−DA diagnostic
+  rejects the prespecified virtual-load direction in 2025, but it is not a complete
+  executable P&L study and does not justify a post-hoc reversed trade.
+
+## Monitoring
+
+A production version should track calibration drift, PR-AUC by season, feature
+coverage, forecast-vintage latency, threshold sensitivity, and performance during
+named stress events. Retraining must preserve an expanding or rolling time split.
