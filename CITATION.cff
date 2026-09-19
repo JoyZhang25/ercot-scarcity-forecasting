@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software or protocol, please cite the repository."
+title: "Information or Noise? Leakage-resistant S&P 500 forecasting with financial headlines"
+type: software
+authors:
+  - family-names: Zhang
+    given-names: Jingyi
+    alias: Joy Zhang
+repository-code: "https://github.com/JoyZhang25/market-news-signal"
+url: "https://joyzhang25.github.io/market-news-signal/"
+license: MIT
+version: 0.1.0
+date-released: 2026-09-19
+keywords:
+  - machine learning
+  - empirical finance
+  - natural language processing
+  - time-series validation
+  - reproducible research

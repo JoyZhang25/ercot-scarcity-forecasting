@@ -1,0 +1,16 @@
+.DS_Store
+.pytest_cache/
+__pycache__/
+*.egg-info/
+*.py[cod]
+.venv/
+
+data/raw/*
+!data/raw/.gitkeep
+outputs/*
+!outputs/.gitkeep
+!outputs/benchmark/
+outputs/benchmark/*
+!outputs/benchmark/*.csv
+!outputs/benchmark/*.json
+!outputs/benchmark/*.png

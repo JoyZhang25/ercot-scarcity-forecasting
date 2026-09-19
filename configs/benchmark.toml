@@ -1,0 +1,12 @@
+[experiment]
+train_end = "2019-12-31"
+validation_end = "2021-12-31"
+execution_lag_days = 1
+transaction_cost_bps = 5.0
+tfidf_min_df = 3
+tfidf_max_features = 12000
+tfidf_ngram_max = 2
+candidate_c = [0.05, 0.1, 0.5, 1.0, 2.0]
+bootstrap_reps = 1000
+block_length = 10
+seed = 2026

@@ -1,0 +1,53 @@
+{
+  "config": {
+    "block_length": 10,
+    "bootstrap_reps": 1000,
+    "candidate_c": [
+      0.05,
+      0.1,
+      0.5,
+      1.0,
+      2.0
+    ],
+    "execution_lag_days": 1,
+    "seed": 2026,
+    "tfidf_max_features": 12000,
+    "tfidf_min_df": 3,
+    "tfidf_ngram_max": 2,
+    "train_end": "2019-12-31",
+    "transaction_cost_bps": 5.0,
+    "validation_end": "2021-12-31"
+  },
+  "date_ranges": {
+    "test": [
+      "2022-01-03",
+      "2024-03-04"
+    ],
+    "train": [
+      "2016-10-17",
+      "2019-12-31"
+    ],
+    "validation": [
+      "2020-01-02",
+      "2021-12-31"
+    ]
+  },
+  "input_hashes": {
+    "headlines_sha256": "45d72b46859dd8a3ed67f2895dc0a73de99f9cd817c0b2f07317cf4594688823",
+    "market_sha256": "6ab1d48d60c16f2b5c0ff51a8755f6c270245677a59953618902d972b294ab8e"
+  },
+  "sample_counts": {
+    "headlines": 18153,
+    "market_sessions": 2085,
+    "panel": 1854,
+    "test": 542,
+    "train": 805,
+    "validation": 503
+  },
+  "versions": {
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "python": "3.12.14",
+    "scikit_learn": "1.9.1"
+  }
+}
