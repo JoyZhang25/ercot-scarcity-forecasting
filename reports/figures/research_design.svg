@@ -1,82 +1,53 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" role="img" aria-labelledby="title desc">
-  <title id="title">Point-in-time ERCOT scarcity forecasting design</title>
-  <desc id="desc">Information known by 9 AM Central on the prior day is used to rank the next day's 24 hours by price-spike probability. A locked 2025 test evaluates forecast ranking and the separate virtual-load pricing hypothesis.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="300" viewBox="0 0 1000 300" role="img" aria-labelledby="title desc">
+  <title id="title">ERCOT price-spike prediction clock and locked-test results</title>
+  <desc id="desc">Weather vintages, lagged prices, and calendar variables available by 9 AM Central on the previous day are used to rank the next day's hours. The locked 2025 test evaluates forecast ranking separately from the real-time minus day-ahead pricing hypothesis.</desc>
   <defs>
-    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-      <path d="M0 0L8 4L0 8Z" fill="#8391A2"/>
+    <marker id="timeline-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0L8 4L0 8Z" fill="#8997A5"/>
     </marker>
   </defs>
 
-  <rect width="1200" height="340" fill="#F7F8FA"/>
-  <rect x="0.5" y="0.5" width="1199" height="339" fill="none" stroke="#DDE2E8"/>
+  <rect width="1000" height="300" fill="#F7F8FA"/>
 
-  <text x="52" y="43" fill="#172B3A" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="20" font-weight="600">A point-in-time design</text>
-  <text x="1148" y="43" text-anchor="end" fill="#687887" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="12" letter-spacing="1.4">ERCOT · HB_NORTH · HOURLY</text>
-  <line x1="52" y1="61" x2="1148" y2="61" stroke="#CBD3DC"/>
+  <!-- Header -->
+  <text x="52" y="34" fill="#D2642A" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.5">DECISION CLOCK</text>
+  <text x="948" y="34" text-anchor="end" fill="#617283" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="0.8">TARGET · HB_NORTH RT &gt; $100/MWh</text>
 
-  <!-- 01: information cutoff -->
-  <text x="52" y="94" fill="#D36B35" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.5">01  INFORMATION CUTOFF</text>
-  <text x="52" y="133" fill="#172B3A" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="27" font-weight="600">09:00 CT</text>
-  <text x="177" y="133" fill="#687887" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="17">on D−1</text>
-  <line x1="52" y1="149" x2="336" y2="149" stroke="#DDE2E8"/>
-  <circle cx="58" cy="174" r="3" fill="#D36B35"/>
-  <text x="72" y="179" fill="#344B5E" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="14">48h weather forecast vintages</text>
-  <circle cx="58" cy="204" r="3" fill="#D36B35"/>
-  <text x="72" y="209" fill="#344B5E" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="14">48 / 72 / 168h market lags</text>
-  <circle cx="58" cy="234" r="3" fill="#D36B35"/>
-  <text x="72" y="239" fill="#344B5E" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="14">hour, weekday, season</text>
+  <!-- What enters the forecast -->
+  <text x="52" y="68" fill="#183044" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="16" font-weight="650">Available to the model</text>
+  <text x="52" y="89" fill="#617283" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="14">48h weather vintages · lagged prices · calendar</text>
 
-  <path d="M354 179H411" fill="none" stroke="#8391A2" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="400" y="68" fill="#183044" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="16" font-weight="650">Rank the next day's 24 hours</text>
+  <text x="400" y="89" fill="#617283" font-family="Georgia, 'Times New Roman', serif" font-size="16" font-style="italic">pₕ = Pr(RTₕ &gt; $100/MWh)</text>
 
-  <!-- 02: score the operating day -->
-  <text x="432" y="94" fill="#52718A" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.5">02  RANK THE NEXT 24 HOURS</text>
-  <text x="432" y="134" fill="#172B3A" font-family="Georgia, 'Times New Roman', serif" font-size="25" font-style="italic">p</text>
-  <text x="445" y="139" fill="#172B3A" font-family="Georgia, 'Times New Roman', serif" font-size="14" font-style="italic">h</text>
-  <text x="461" y="134" fill="#172B3A" font-family="Georgia, 'Times New Roman', serif" font-size="22">= Pr(RT</text>
-  <text x="548" y="139" fill="#172B3A" font-family="Georgia, 'Times New Roman', serif" font-size="14" font-style="italic">h</text>
-  <text x="560" y="134" fill="#172B3A" font-family="Georgia, 'Times New Roman', serif" font-size="22"> &gt; $100/MWh)</text>
-  <text x="432" y="165" fill="#687887" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="13">Gradient boosting · selected on 2024 only</text>
+  <!-- Timeline -->
+  <line x1="52" y1="116" x2="944" y2="116" stroke="#8997A5" stroke-width="1.5" marker-end="url(#timeline-arrow)"/>
+  <line x1="52" y1="110" x2="52" y2="122" stroke="#8997A5" stroke-width="1.5"/>
+  <line x1="338" y1="96" x2="338" y2="125" stroke="#D2642A" stroke-width="2.5"/>
+  <circle cx="338" cy="116" r="4.5" fill="#D2642A"/>
+  <line x1="567" y1="110" x2="567" y2="122" stroke="#8997A5" stroke-width="1.5"/>
+  <line x1="858" y1="110" x2="858" y2="122" stroke="#8997A5" stroke-width="1.5"/>
 
-  <g transform="translate(432 190)">
-    <line x1="0" y1="49.5" x2="278" y2="49.5" stroke="#CBD3DC"/>
-    <rect x="2" y="38" width="7" height="11" fill="#9AA7B3"/><rect x="13" y="40" width="7" height="9" fill="#9AA7B3"/>
-    <rect x="24" y="42" width="7" height="7" fill="#9AA7B3"/><rect x="35" y="43" width="7" height="6" fill="#9AA7B3"/>
-    <rect x="46" y="42" width="7" height="7" fill="#9AA7B3"/><rect x="57" y="39" width="7" height="10" fill="#9AA7B3"/>
-    <rect x="68" y="34" width="7" height="15" fill="#9AA7B3"/><rect x="79" y="27" width="7" height="22" fill="#6E8293"/>
-    <rect x="90" y="19" width="7" height="30" fill="#52718A"/><rect x="101" y="23" width="7" height="26" fill="#52718A"/>
-    <rect x="112" y="30" width="7" height="19" fill="#6E8293"/><rect x="123" y="35" width="7" height="14" fill="#9AA7B3"/>
-    <rect x="134" y="37" width="7" height="12" fill="#9AA7B3"/><rect x="145" y="36" width="7" height="13" fill="#9AA7B3"/>
-    <rect x="156" y="32" width="7" height="17" fill="#6E8293"/><rect x="167" y="25" width="7" height="24" fill="#52718A"/>
-    <rect x="178" y="14" width="7" height="35" fill="#D36B35"/><rect x="189" y="3" width="7" height="46" fill="#D36B35"/>
-    <rect x="200" y="8" width="7" height="41" fill="#D36B35"/><rect x="211" y="18" width="7" height="31" fill="#52718A"/>
-    <rect x="222" y="28" width="7" height="21" fill="#6E8293"/><rect x="233" y="34" width="7" height="15" fill="#9AA7B3"/>
-    <rect x="244" y="38" width="7" height="11" fill="#9AA7B3"/><rect x="255" y="40" width="7" height="9" fill="#9AA7B3"/>
-    <text x="0" y="68" fill="#7C8995" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="10">00</text>
-    <text x="278" y="68" text-anchor="end" fill="#7C8995" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="10">23 CT</text>
-  </g>
+  <text x="52" y="145" fill="#617283" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="13">D−2</text>
+  <text x="338" y="145" text-anchor="middle" fill="#B35328" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="13" font-weight="700">09:00 CT · D−1</text>
+  <text x="567" y="145" text-anchor="middle" fill="#617283" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="13">DAY-AHEAD AUCTION</text>
+  <text x="858" y="145" text-anchor="middle" fill="#183044" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="13" font-weight="700">OPERATING DAY D</text>
 
-  <path d="M735 179H792" fill="none" stroke="#8391A2" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <!-- Two separate locked-test questions -->
+  <line x1="500" y1="174" x2="500" y2="243" stroke="#D7DDE3"/>
 
-  <!-- 03: two distinct questions -->
-  <text x="813" y="94" fill="#52718A" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.5">03  LOCKED 2025 AUDIT</text>
+  <text x="52" y="187" fill="#617283" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="1.1">LOCKED 2025 · FORECAST TEST</text>
+  <text x="52" y="224" fill="#183044" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="34" font-weight="650">0.095</text>
+  <text x="158" y="224" fill="#183044" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="16" font-weight="650">PR-AUC</text>
+  <text x="52" y="246" fill="#617283" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="14">3.5× the random-ranking baseline</text>
 
-  <text x="813" y="127" fill="#344B5E" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="13" font-weight="600">Does the score rank tail risk?</text>
-  <text x="813" y="160" fill="#172B3A" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="25" font-weight="600">0.095</text>
-  <text x="895" y="160" fill="#687887" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="13">PR-AUC · 3.5× base rate</text>
+  <text x="548" y="187" fill="#617283" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="1.1">LOCKED 2025 · PRICING TEST</text>
+  <text x="548" y="224" fill="#183044" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="34" font-weight="650">−$4.14</text>
+  <text x="676" y="224" fill="#183044" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="16" font-weight="650">/MWh RT−DA lift</text>
+  <text x="548" y="246" fill="#A24F2B" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="14">No virtual-load alpha in the locked test.</text>
 
-  <line x1="813" y1="182" x2="1148" y2="182" stroke="#DDE2E8"/>
-
-  <text x="813" y="211" fill="#344B5E" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="13" font-weight="600">Is that risk underpriced day-ahead?</text>
-  <text x="813" y="244" fill="#172B3A" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="25" font-weight="600">−$4.14</text>
-  <text x="904" y="244" fill="#687887" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="13">/MWh RT−DA lift</text>
-  <text x="813" y="265" fill="#A35432" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="12">No virtual-load alpha in the locked test.</text>
-
-  <!-- protocol footer -->
-  <line x1="52" y1="290" x2="1148" y2="290" stroke="#CBD3DC"/>
-  <text x="52" y="318" fill="#687887" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" font-weight="600" letter-spacing="0.6">FIT  2021–2023</text>
-  <circle cx="180" cy="314" r="2.5" fill="#AAB4BF"/>
-  <text x="197" y="318" fill="#687887" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" font-weight="600" letter-spacing="0.6">SELECT + CALIBRATE  2024</text>
-  <circle cx="395" cy="314" r="2.5" fill="#AAB4BF"/>
-  <text x="412" y="318" fill="#172B3A" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="0.6">TEST ONCE  2025</text>
-  <text x="1148" y="318" text-anchor="end" fill="#687887" font-family="Georgia, 'Times New Roman', serif" font-size="13" font-style="italic">forecasting skill ≠ trading alpha</text>
+  <!-- Protocol -->
+  <line x1="52" y1="266" x2="948" y2="266" stroke="#D7DDE3"/>
+  <text x="52" y="287" fill="#617283" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="12" font-weight="650" letter-spacing="0.4">FIT 2021–23   ·   SELECT + CALIBRATE 2024   ·   TEST ONCE 2025</text>
+  <text x="948" y="287" text-anchor="end" fill="#617283" font-family="Georgia, 'Times New Roman', serif" font-size="14" font-style="italic">forecasting skill ≠ trading alpha</text>
 </svg>
