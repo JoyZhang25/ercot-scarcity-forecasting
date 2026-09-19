@@ -24,7 +24,7 @@ survive**—is the point of the repository.
 
 ![Risk score separates scarcity from trading value](outputs/benchmark/figures/risk_lift.png)
 
-## The information clock
+## How the evidence is built
 
 Every prediction is made at **09:00 CT on operating day D−1**. The model may use
 fixed 48-hour weather forecasts, calendar structure, and market history available
@@ -41,6 +41,119 @@ The scarcity classifier also excludes the target-day day-ahead settlement price.
 This clock matters more than model complexity. A powerful learner with revised
 weather, contemporaneous load, or future prices would be an excellent backtest
 and a useless forecast.
+
+![Point-in-time methodology from public data to forecast and alpha tests](reports/figures/methodology_pipeline.svg)
+
+### Step 1 · Construct the point-in-time hourly panel
+
+For each HB_NORTH delivery hour h, the pipeline creates three feature blocks:
+
+- **forecast physical stress:** fixed 48-hour GFS forecast vintages for Austin,
+  Dallas, Houston, Midland, and San Antonio, plus statewide temperature extrema
+  and heating/cooling degrees;
+- **market memory:** HB_NORTH real-time price lags at 48, 72, and 168 hours,
+  together with shifted seven-day mean, volatility, maximum, and trailing spike
+  frequency;
+- **seasonal structure:** cyclical hour, weekday, and month encodings and a
+  weekend indicator.
+
+The 48-hour shift happens *before* rolling statistics are computed. Target-day
+realized load, weather, RT price, and DA price therefore cannot leak into the
+features. Lagged native load is retained only as an ablation because its annual
+archives can contain later settlement revisions. The construction is implemented
+in [build_feature_frame](src/ercot_spikes/data.py); the resulting feature names
+and timing guardrail are recorded in the
+[run manifest](outputs/benchmark/run_manifest.json).
+
+### Step 2 · Select a model without touching the locked year
+
+Six model families see the same features and chronological split: a smoothed
+seasonal prior, class-weighted logistic regression, calibrated RBF SVM, random
+forest, class-weighted histogram gradient boosting, and a two-layer MLP. Missing
+value imputation, scaling, and internal SVM calibration live inside scikit-learn
+pipelines, so they are fit from training data only.
+
+The models fit on 2021–2023 and compete on **2024 PR-AUC**. That metric—not 2025
+performance—selects gradient boosting. The selected model's 2024 scores then fit
+an isotonic calibration map; model and calibrator are then applied unchanged to
+2025. The complete selection record is in
+[validation_metrics.csv](outputs/benchmark/validation_metrics.csv), and the
+implementation is in [models.py](src/ercot_spikes/models.py) and
+[experiment.py](src/ercot_spikes/experiment.py).
+
+### Step 3 · Audit ranking, probabilities, and learned signal
+
+With spikes comprising only 2.68% of 2025 hours, accuracy would reward an
+always-no-spike rule. The locked audit therefore separates three questions:
+
+1. **Ranking:** PR-AUC, ROC-AUC, and recall/precision among the top 5% of scores.
+2. **Probability quality:** Brier score, log loss, and a reliability diagram
+   after validation-only isotonic calibration.
+3. **Interpretation:** held-out permutation importance measures the decrease in
+   test PR-AUC when one feature is shuffled; the lagged-load ablation asks whether
+   a plausible extra data block improves validation performance.
+
+At this stage the output is a calibrated estimate of the probability that RT(h)
+exceeds $100/MWh, conditional on information available at 09:00 CT on D−1. It
+is a scarcity forecast—not yet a position. The underlying evidence is preserved in
+[test_metrics.csv](outputs/benchmark/test_metrics.csv),
+[test_predictions.csv](outputs/benchmark/test_predictions.csv), and
+[permutation_importance.csv](outputs/benchmark/permutation_importance.csv).
+
+### Step 4 · Test whether forecast risk was already priced
+
+The locked 2025 probabilities are ranked into deciles. Within each decile the
+pipeline measures both the realized spike frequency and the economic spread,
+defined as RT(h) − DA(h).
+
+The pricing statistic is the top-risk-decile mean spread minus the unconditional
+mean spread. Its uncertainty is recomputed by resampling whole operating days,
+which preserves within-day dependence. The model concentrates spikes, but the
+spread lift is **−$4.14/MWh** with a 95% daily-block interval of
+**[−$7.67, −$0.42]**. This is the evidence behind the first rejection:
+forecasting scarcity did not produce virtual-load alpha. The decile calculation
+can be inspected in [risk_deciles.csv](outputs/benchmark/risk_deciles.csv) and
+[evaluation.py](src/ercot_spikes/evaluation.py).
+
+### Step 5 · Model mispricing directly and freeze the action rule
+
+The second path changes the estimand rather than reversing the failed trade.
+A regularized histogram-gradient-boosting regressor estimates the clipped
+conditional mean of RT(h) − DA(h) given the 09:00 CT information set. It uses the same
+point-in-time weather and calendar data, plus RT, DA, and spread histories ending
+by D−2 and the prior operating day's already-cleared DA curve. The target day's
+DA clearing price remains unavailable.
+
+At 09:00 CT, the frozen rule chooses the single next-day hour with the most
+negative forecast, provided predicted RT−DA is at most −$3/MWh. It takes a 1 MW
+virtual-supply position, whose net settlement is DA(h) − RT(h) minus a $2/MWh
+research hurdle.
+
+The model walks forward at year boundaries: fit through 2023 for 2024 validation,
+through 2024 for the 2025 shadow period, and through 2025 for the prospective
+2026 lockbox. The rule is encoded in
+[alpha.py](src/ercot_spikes/alpha.py) and was committed before acquiring the
+2026 outcomes.
+
+### Step 6 · Apply an alpha gate, not a favorable-chart test
+
+Positive mean P&L is only the first diagnostic. The audit also reports a
+5,000-repetition operating-day block-bootstrap interval, a seven-lag Newey–West
+t-statistic, monthly stability, drawdown, the share of profits from the five best
+days, performance after removing those days, and two equal-turnover randomized
+baselines. The signal is labeled established alpha only if uncertainty clears
+zero and the economics are not dominated by a handful of observations.
+
+That gate fails in the current lockbox: the mean is positive, but the confidence
+interval crosses zero, the HAC t-statistic is 1.11, and removing the five best
+trades changes mean P&L to −$7.01/MWh. The evidence files are
+[alpha_metrics.csv](outputs/alpha/alpha_metrics.csv) and
+[alpha_baselines.csv](outputs/alpha/alpha_baselines.csv).
+
+The complete assumptions and rejection gates are documented in the
+[research methodology](docs/methodology.md), [locked-test results](docs/results.md),
+[model card](docs/model-card.md), and preregistered
+[alpha protocol](docs/alpha_protocol.md).
 
 ## 1 · Forecast the physical tail
 
@@ -137,29 +250,7 @@ random date/hour baseline (randomization p=0.024). It is not yet credible alpha:
 **Verdict: positive but fragile candidate signal—not established alpha.** The
 distinction is intentional. A backtest earns attention; robustness earns belief.
 
-## Methods: machine learning first, market test second
-
-This is not one flexible model carried from prediction into trading. The
-scarcity study asks whether supervised learning can rank a physical tail event;
-the alpha study asks whether any forecast survives prices, costs, and statistical
-scrutiny.
-
-| Layer | Methods actually used | Purpose |
-|---|---|---|
-| Supervised learning | class-weighted logistic regression, RBF SVM, random forest, histogram gradient boosting, two-layer MLP | compare linear, kernel, ensemble, and neural models under one design |
-| Rare-event evaluation | PR-AUC, top-decile lift, precision/recall at fixed coverage, isotonic calibration, Brier score | avoid the false comfort of accuracy when spikes are only 2.68% of hours |
-| Interpretation | held-out permutation importance and a lagged-load ablation | identify useful signal without reading importance off the training sample |
-| Time-aware validation | point-in-time features, chronological selection, locked 2025 test, prospective 2026 lockbox | prevent look-ahead and repeated test-set tuning |
-| Quant validation | direct RT−DA regression, explicit costs, equal-turnover randomization, HAC inference, daily block bootstrap, tail-concentration audit | distinguish predictive skill from economically robust alpha |
-
-Together, those layers show the central result: **the same data can contain
-forecasting signal without containing a defensible trading edge.**
-
-The complete assumptions and rejection gates are documented in the
-[research methodology](docs/methodology.md), [locked-test results](docs/results.md),
-[model card](docs/model-card.md), and preregistered
-[alpha protocol](docs/alpha_protocol.md). The
-[research notebook](notebooks/ercot_price_spike_forecasting.ipynb) is the guided
+The [research notebook](notebooks/ercot_price_spike_forecasting.ipynb) is the guided
 walkthrough; reusable code lives in `src/ercot_spikes/` and is covered by tests.
 
 ## Reproduce
@@ -179,6 +270,8 @@ python -m venv .venv
   --config configs/alpha_lockbox.toml \
   --output outputs/alpha
 
+.venv/bin/python scripts/plot_methodology.py
+
 .venv/bin/pytest
 ```
 
@@ -193,6 +286,7 @@ variables.
 configs/experiment.toml             frozen target, clock, split, and seed
 configs/alpha_lockbox.toml           preregistered trading rule and alpha gate
 notebooks/                           recruiter-readable research narrative
+scripts/plot_methodology.py           reproducible methodology figure
 src/ercot_spikes/                    features, models, evaluation, and figures
 tests/                               time-alignment and model-contract tests
 outputs/benchmark/                   locked metrics, predictions, and figures
