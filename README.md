@@ -1,113 +1,120 @@
 # Scarcity Before the Spike
 
-### Point-in-time machine learning for next-day ERCOT price extremes
+### Forecasting ERCOT tail risk—and testing whether the forecast survives market prices
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-2F80ED.svg)](https://www.python.org/)
 [![Tests](https://img.shields.io/badge/tests-pytest-1B998B.svg)](.github/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-102A43.svg)](LICENSE)
 
-Electricity is perishable. When Texas demand and supply approach the edge, a
-routine $30/MWh hour can become a triple-digit event before a trader can wait for
-tomorrow's realized weather. This project asks a decision-relevant question:
+**A market can be predictable without being mispriced.**
 
-> **Using only information available by 09:00 CT on the previous day, can we
-> identify which next-day ERCOT hours will exceed $100/MWh in real time?**
+In ERCOT, electricity cannot wait on a shelf. A routine $30/MWh hour can become
+a triple-digit scarcity event when weather-driven demand meets tight supply. This
+project asks whether those hours can be identified *before* the day-ahead auction—and
+then asks the harder question: did the auction already price the risk?
 
-The answer is useful but deliberately qualified. The model finds operational tail
-risk. A separate, prospectively frozen virtual-supply study produces positive
-2026 P&L, but fails its own statistical and concentration gates. This repository
-therefore distinguishes **forecast skill**, an **alpha candidate**, and an
-**established alpha** rather than treating them as synonyms.
+| Research question | Out-of-sample verdict | Key evidence |
+|---|---|---|
+| Can public pre-auction data rank next-day scarcity? | **Yes** | 2025 PR-AUC 0.095 vs 0.0268 base rate; 4.0× top-decile lift |
+| Is the spike forecast itself a trading signal? | **No** | highest-risk decile earned a −$6.59/MWh mean RT−DA spread |
+| Can a model trained directly on RT−DA find alpha? | **Candidate only** | positive 2026 lockbox P&L, but confidence and concentration tests fail |
 
-![Research design](reports/figures/research_design.svg)
+That progression—**forecast risk, test monetization, reject what does not
+survive**—is the point of the repository.
 
-## The result in one minute
+![Risk score separates scarcity from trading value](outputs/benchmark/figures/risk_lift.png)
 
-The model family was selected on 2024, then evaluated once on a locked 2025 test
-year: 8,759 hours, of which 235 (2.68%) were spikes.
+## The information clock
 
-| Locked 2025 result | Value | Interpretation |
-|---|---:|---|
-| Selected model | Gradient boosting | chosen on 2024 PR-AUC, not post-hoc on test |
-| PR-AUC | **0.095** | 3.5× the 0.0268 random-ranking baseline |
-| ROC-AUC | **0.816** | strong ranking across thresholds |
-| Highest-risk decile spike rate | **10.62%** | 4.0× the unconditional event rate |
-| Calibrated Brier score | **0.0254** | probability error after validation-only isotonic calibration |
-| Top-decile RT−DA spread lift | **−$4.14/MWh** | 95% daily block-bootstrap CI [−$7.67, −$0.42] |
+Every prediction is made at **09:00 CT on operating day D−1**. The model may use
+fixed 48-hour weather forecasts, calendar structure, and market history available
+by then. It may not use target-day realized weather, load, or real-time price.
+The scarcity classifier also excludes the target-day day-ahead settlement price.
 
-That last row matters. Hours can be predictably dangerous without being
-predictably mispriced: the day-ahead auction may already price the same weather and
-scarcity risk. The project keeps **forecasting skill** and **economic value** as two
-separate hypotheses.
+| Period | Role | What it can influence |
+|---|---|---|
+| 2021–2023 | training | fitted parameters |
+| 2024 | validation | model choice and probability calibration |
+| 2025 | locked test | one evaluation of the scarcity hypothesis |
+| 2026 YTD | prospective lockbox | one evaluation of the frozen alpha rule |
 
-![Locked-year price and probability timeline](outputs/benchmark/figures/scarcity_timeline.png)
+This clock matters more than model complexity. A powerful learner with revised
+weather, contemporaneous load, or future prices would be an excellent backtest
+and a useless forecast.
 
-## Why this is a machine-learning problem
+## 1 · Forecast the physical tail
 
-Spikes are rare, nonlinear, seasonal, and regime-dependent. Accuracy is the wrong
-score—predicting “no spike” every hour would be more than 97% accurate in 2025.
-The experiment therefore compares a controlled set of supervised learners using
-precision–recall AUC, calibration, and top-risk recall.
+The first target is deliberately operational:
 
-![Model comparison](outputs/benchmark/figures/model_comparison.png)
+> Will hourly HB_NORTH real-time price exceed **$100/MWh tomorrow**?
 
-| Model family | 2024 validation PR-AUC | 2025 test PR-AUC |
-|---|---:|---:|
-| Seasonal hour/month prior | 0.056 | 0.066 |
-| Regularized logistic regression | 0.053 | 0.061 |
-| RBF support vector machine | 0.045 | 0.069 |
-| Random forest | 0.076 | 0.086 |
-| **Histogram gradient boosting** | **0.084** | **0.095** |
-| Gradient boosting + lagged load | 0.079 | 0.088 |
-| Two-layer neural network | 0.067 | 0.077 |
+Only 235 of 8,759 hours crossed that threshold in 2025. An always-quiet model
+would therefore be 97.3% accurate and practically worthless. Models are selected
+by **precision–recall AUC**, then audited for ranking, calibration, and risk
+concentration.
 
-Gradient boosting wins the 2024 selection period and remains best in 2025. The
-choice is nevertheless governed by validation—not by looking at test rankings.
+![Locked-test model comparison](outputs/benchmark/figures/model_comparison.png)
 
-## What the model knew—and what it did not
+Gradient boosting won on 2024 validation data and was evaluated once on 2025:
 
-At the decision time, the feature set contains:
+- **0.095 PR-AUC**, 3.5× the random-ranking baseline;
+- **0.816 ROC-AUC**;
+- **10.62% realized spike rate** in the highest-risk decile, versus 2.68% overall;
+- **0.0254 calibrated Brier score** after validation-only isotonic calibration.
 
-- **forecast weather stress:** fixed 48-hour-lead GFS temperature vintages for
-  Dallas, Houston, Austin, San Antonio, and Midland; regional extrema and
-  heating/cooling degrees;
-- **lagged market state:** HB_NORTH prices at 48, 72, and 168 hours; shifted
-  seven-day level, volatility, maximum, and trailing spike frequency;
-- **calendar structure:** cyclical hour, weekday, and month encodings.
+The benchmark is intentionally broad but controlled: a seasonal prior,
+regularized logistic regression, RBF SVM, random forest, histogram gradient
+boosting, and a two-layer neural network all see the same chronological splits.
+This is model comparison under a fixed research design, not a leaderboard search.
 
-The classifier does **not** receive realized target-day weather, contemporaneous
-load, target-hour real-time price, or day-ahead settlement price. DA price appears
-only in the economic diagnostic.
+![Locked 2025 price and forecast-risk timeline](outputs/benchmark/figures/scarcity_timeline.png)
 
-An additional **retrospective lagged-load ablation** uses ERCOT annual native-load
-archives shifted by 48 hours. Because those annual files can include settlement
-revisions unavailable at the original decision time, the block is not eligible for
-primary-model selection. It also lowers 2024 validation PR-AUC from 0.084 to 0.079.
-This is feature ablation doing its job—more data is not automatically more signal.
+### What did the model learn?
 
-![Feature importance](outputs/benchmark/figures/feature_importance.png)
+The feature map combines three economic ideas: **forecast physical stress**
+(48-hour GFS temperatures across five Texas cities), **market memory**
+(strictly lagged prices, volatility, maxima, and spike frequency), and **seasonal
+structure** (cyclical hour, weekday, and month).
 
-Held-out permutation importance says the model primarily uses time-of-day,
-seasonality, the same hour one week earlier, the 48-hour price lag, price
-volatility, and Austin/Midland temperature forecasts. This is more informative than a generic “tree model
-worked” claim: the learned ranking is an interaction between physical stress,
-market memory, and seasonal structure.
+![Held-out permutation importance](outputs/benchmark/figures/feature_importance.png)
 
-## Does the signal become alpha?
+Held-out permutation importance emphasizes time of day, seasonality, the same
+hour one week earlier, the 48-hour price lag, volatility, and temperature
+forecasts. A separate lagged-load ablation lowers validation PR-AUC from 0.084
+to 0.079. More data did not mean more signal—and revision-prone annual load
+archives were kept out of primary model selection.
 
-Not by simply trading the spike score. The highest-risk decile contains far more
-price spikes, but its mean 2025 RT−DA spread is −$6.59/MWh. Relative to all hours,
-the top-decile spread lift is −$4.14/MWh and its daily block-bootstrap interval
-lies below zero.
+## 2 · Ask whether the market already knew
 
-![Risk lift and spread diagnostic](outputs/benchmark/figures/risk_lift.png)
+A good scarcity forecast is not automatically alpha. The economic quantity is
+the spread
 
-That failure motivates a second research design which predicts the economic target
-directly. The rule was committed before the 2026 outcomes were downloaded:
+```text
+RT−DA = real-time settlement − day-ahead settlement.
+```
 
-> At 09:00 CT on D−1, forecast hourly `RT−DA`; if the day's most-negative forecast
-> is at most −$3/MWh, place one 1 MW virtual-supply position in that hour. Otherwise
-> do not trade. Deduct a $2/MWh research hurdle from every cleared position.
+The classifier's highest-risk decile did contain four times as many spikes, but
+its mean RT−DA spread was **−$6.59/MWh**. Relative to all hours, its spread lift
+was **−$4.14/MWh**, with a 95% daily block-bootstrap interval of
+[−$7.67, −$0.42].
+
+In plain English: the model recognized dangerous hours, but day-ahead prices
+more than compensated for that danger. Reversing the trade after seeing the
+result would be post-hoc storytelling, so the original monetization hypothesis
+is recorded as a failure.
+
+## 3 · Predict mispricing directly
+
+The second experiment gives alpha a cleaner test. Instead of converting a spike
+probability into a trade, a gradient-boosting regressor forecasts hourly RT−DA
+directly. A virtual-supply position sells in the day-ahead market and buys back
+in real time, so it profits when RT−DA is negative. The rule was committed in
+[`0a7b554`](https://github.com/JoyZhang25/ercot-scarcity-forecasting/commit/0a7b554)
+before 2026 outcomes were acquired:
+
+> Each morning at 09:00 CT, select at most one next-day hour. Enter a 1 MW
+> virtual-supply position only when predicted RT−DA ≤ −$3/MWh, then deduct a
+> $2/MWh research hurdle.
 
 | Walk-forward period | Role | Trades | Mean net P&L | Daily Sharpe | 95% daily-block CI |
 |---|---|---:|---:|---:|---:|
@@ -115,50 +122,38 @@ directly. The rule was committed before the 2026 outcomes were downloaded:
 | 2025 | shadow | 274 | +$4.83/MWh | 0.82 | [−$8.48, +$13.93] |
 | **2026 YTD** | **prospective lockbox** | **111** | **+$13.76/MWh** | **0.88** | **[−$21.15, +$53.00]** |
 
-![Prospective alpha audit](reports/figures/alpha_audit.png)
+![Prospective virtual-supply alpha audit](reports/figures/alpha_audit.png)
 
-The 2026 point estimate is economically positive: $1,527 net on 111 hypothetical
-1 MW positions, with a 71.2% win rate. The model also beats an equal-turnover
-random date/hour baseline in the frozen sample (randomization p=0.024). But the
-more important robustness tests fail:
+The 2026 point estimate is attractive: **$1,527 net** on 111 hypothetical 1 MW
+positions, a **71.2% win rate**, and better performance than an equal-turnover
+random date/hour baseline (randomization p=0.024). It is not yet credible alpha:
 
-- the block-bootstrap interval still includes zero and the HAC t-statistic is 1.11;
+- the confidence interval crosses zero and the HAC t-statistic is 1.11;
 - the five best days contribute 62.4% of positive P&L;
-- removing those five days changes the remaining mean to **−$7.01/MWh**;
-- conditional on the same trade dates, choosing the hour beats random only at
+- excluding those days changes mean P&L to **−$7.01/MWh**;
+- conditional on trading the same dates, hour selection beats random only at
   p=0.124.
 
-The correct verdict is therefore **positive but fragile candidate signal, not
-established alpha**. This is closer to buy-side research practice than reporting only a
-backtest Sharpe: the economic target is direct, the clock is point-in-time, the
-rule is frozen before the lockbox, costs are explicit, and failed inference is
-shown rather than hidden. The full preregistration and rejection rule are in the
-[alpha protocol](docs/alpha_protocol.md).
+**Verdict: positive but fragile candidate signal—not established alpha.** The
+distinction is intentional. A backtest earns attention; robustness earns belief.
 
-## Research design
+## What this project demonstrates
 
-```text
-prediction clock        09:00 CT on operating day D−1
-target                  1{hourly HB_NORTH RT price on D > $100/MWh}
-training                2021–2023
-selection/calibration   2024
-locked test             2025
-primary metric          precision–recall AUC
-uncertainty             daily block bootstrap for the RT−DA diagnostic
-```
+This repository is an end-to-end empirical research system, not a single
+notebook with a favorable chart. It combines:
 
-The implementation demonstrates **rare-event classification, class weighting,
-regularized linear models, kernel SVMs, bagging, gradient boosting, neural
-networks, chronological validation, probability calibration, ablation-quality
-baselines, permutation importance, direct spread regression, sparse position
-selection, randomized trading baselines, HAC inference, and block-bootstrap
-inference**—all within one coherent market question.
+- point-in-time feature engineering and leakage tests;
+- rare-event classification, nonlinear regression, calibration, and ablation;
+- chronological model selection, a locked test, and a prospective holdout;
+- permutation importance, randomization tests, HAC inference, and block bootstrap;
+- explicit trading rules, costs, turnover-matched baselines, and tail-concentration audits.
 
-Read the full [methodology](docs/methodology.md), [locked-test interpretation](docs/results.md),
-and [model card](docs/model-card.md). The
-[research notebook](notebooks/ercot_price_spike_forecasting.ipynb) provides a
-guided, executable walkthrough; reusable logic lives in `src/ercot_spikes/` and is
-covered by tests.
+The complete assumptions and rejection gates are documented in the
+[research methodology](docs/methodology.md), [locked-test results](docs/results.md),
+[model card](docs/model-card.md), and preregistered
+[alpha protocol](docs/alpha_protocol.md). The
+[research notebook](notebooks/ercot_price_spike_forecasting.ipynb) is the guided
+walkthrough; reusable code lives in `src/ercot_spikes/` and is covered by tests.
 
 ## Reproduce
 
@@ -166,7 +161,7 @@ covered by tests.
 python -m venv .venv
 .venv/bin/pip install -e '.[dev]'
 
-# Public raw inputs are downloaded locally and remain outside Git.
+# Download public ERCOT and weather inputs; raw files remain outside Git.
 .venv/bin/python scripts/download_data.py
 
 .venv/bin/ercot-spike-benchmark \
@@ -180,25 +175,29 @@ python -m venv .venv
 .venv/bin/pytest
 ```
 
-See the [data contract](data/README.md) for source IDs, schemas, timing assumptions,
-and the distinction between archived forecasts and realized system variables.
+See the [data contract](data/README.md) for source IDs, schemas, timing
+assumptions, and the distinction between archived forecasts and realized system
+variables.
 
-## Repository map
+<details>
+<summary><strong>Repository map</strong></summary>
 
 ```text
 configs/experiment.toml             frozen target, clock, split, and seed
 configs/alpha_lockbox.toml           preregistered trading rule and alpha gate
 notebooks/                           recruiter-readable research narrative
-src/ercot_spikes/                    data, features, models, evaluation, figures
-tests/                               time alignment and model-contract tests
+src/ercot_spikes/                    features, models, evaluation, and figures
+tests/                               time-alignment and model-contract tests
 outputs/benchmark/                   locked metrics, predictions, and figures
 outputs/alpha/                       alpha metrics, baselines, and manifest
-docs/                                methodology, results, and model limitations
+docs/                                methods, results, protocol, and limitations
 ```
+
+</details>
 
 ## Scope
 
 This is a reproducible research project, not investment advice or an ERCOT
-operational tool. The virtual-supply diagnostic assumes a price-taking 1 MW offer
-that clears and does not model QSE fees, collateral, uplift, bid-curve
+operational tool. The virtual-supply study assumes a price-taking 1 MW position
+that clears; it does not model QSE fees, collateral, uplift, bid-curve
 non-clearance, or market impact. Results are not a promise of future performance.
