@@ -137,16 +137,23 @@ random date/hour baseline (randomization p=0.024). It is not yet credible alpha:
 **Verdict: positive but fragile candidate signal—not established alpha.** The
 distinction is intentional. A backtest earns attention; robustness earns belief.
 
-## What this project demonstrates
+## Methods: machine learning first, market test second
 
-This repository is an end-to-end empirical research system, not a single
-notebook with a favorable chart. It combines:
+This is not one flexible model carried from prediction into trading. The
+scarcity study asks whether supervised learning can rank a physical tail event;
+the alpha study asks whether any forecast survives prices, costs, and statistical
+scrutiny.
 
-- point-in-time feature engineering and leakage tests;
-- rare-event classification, nonlinear regression, calibration, and ablation;
-- chronological model selection, a locked test, and a prospective holdout;
-- permutation importance, randomization tests, HAC inference, and block bootstrap;
-- explicit trading rules, costs, turnover-matched baselines, and tail-concentration audits.
+| Layer | Methods actually used | Purpose |
+|---|---|---|
+| Supervised learning | class-weighted logistic regression, RBF SVM, random forest, histogram gradient boosting, two-layer MLP | compare linear, kernel, ensemble, and neural models under one design |
+| Rare-event evaluation | PR-AUC, top-decile lift, precision/recall at fixed coverage, isotonic calibration, Brier score | avoid the false comfort of accuracy when spikes are only 2.68% of hours |
+| Interpretation | held-out permutation importance and a lagged-load ablation | identify useful signal without reading importance off the training sample |
+| Time-aware validation | point-in-time features, chronological selection, locked 2025 test, prospective 2026 lockbox | prevent look-ahead and repeated test-set tuning |
+| Quant validation | direct RT−DA regression, explicit costs, equal-turnover randomization, HAC inference, daily block bootstrap, tail-concentration audit | distinguish predictive skill from economically robust alpha |
+
+Together, those layers show the central result: **the same data can contain
+forecasting signal without containing a defensible trading edge.**
 
 The complete assumptions and rejection gates are documented in the
 [research methodology](docs/methodology.md), [locked-test results](docs/results.md),
