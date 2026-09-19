@@ -71,9 +71,9 @@ archives were kept out of primary model selection.
 A good scarcity forecast is not automatically alpha. The economic quantity is
 the spread
 
-$$
+```math
 S_h=P_h^{RT}-P_h^{DA}.
-$$
+```
 
 The classifier's highest-risk decile did contain four times as many spikes, but
 its mean RT−DA spread was **−$6.59/MWh**. Relative to all hours, its spread lift
@@ -139,13 +139,13 @@ questions.
 For operating day D, the decision is made at 09:00 CT on D−1. The
 available information is
 
-$$
+```math
 \mathcal F_{D-1,09{:}00}
 =
 \left\{
 \text{48-hour GFS vintages, calendar variables, market history through }D-2
 \right\}.
-$$
+```
 
 | Feature block | Variables used | Point-in-time guardrail |
 |---|---|---|
@@ -169,9 +169,9 @@ weather, load, and RT price. Feature construction is implemented in
 
 The rare-event target is
 
-$$
+```math
 Y_h=\mathbf 1\!\left\{P_h^{RT}>100\ \mathrm{USD/MWh}\right\}.
-$$
+```
 
 All candidates receive the same features and chronological split. Imputation,
 scaling, and internal SVM calibration are contained inside scikit-learn pipelines
@@ -196,7 +196,7 @@ does not improve the selected specification. The model definitions are in
 An isotonic map fitted on 2024 converts the raw gradient-boosting score into a
 probability:
 
-$$
+```math
 \widetilde p_h=f_{\mathrm{GB}}(X_h),
 \qquad
 \widehat p_h
@@ -204,7 +204,7 @@ $$
 g_{\mathrm{iso}}\!\left(\widetilde p_h\right)
 \approx
 \Pr\!\left(Y_h=1\mid\mathcal F_{D-1,09{:}00}\right).
-$$
+```
 
 The frozen model and calibrator are then applied unchanged to 2025. Because only
 2.68% of its hours are spikes, the audit reports PR-AUC and top-tail recall rather
@@ -223,32 +223,32 @@ not fed back into model selection.
 
 For each delivery hour,
 
-$$
+```math
 S_h=P_h^{RT}-P_h^{DA}.
-$$
+```
 
 The calibrated probabilities are sorted into risk deciles. The economic statistic
 is
 
-$$
+```math
 Q_h\in\{1,\ldots,10\},
 \qquad
 \Delta_{\mathrm{spread}}
 =
 \mathbb E[S_h\mid Q_h=10]-\mathbb E[S_h].
-$$
+```
 
 Whole operating days—not individual hours—are resampled for the confidence
 interval, preserving within-day dependence. The earlier risk-lift figure is the
 visual output of this step: the top decile concentrates spikes, but the estimate
 is
 
-$$
+```math
 \widehat\Delta_{\mathrm{spread}}
 =-\$4.14/\mathrm{MWh},
 \qquad
 \mathrm{CI}_{95\%}=[-\$7.67,-\$0.42].
-$$
+```
 
 The implementation is in
 [evaluation.py](src/ercot_spikes/evaluation.py).
@@ -258,11 +258,11 @@ The implementation is in
 The second path changes the target instead of reversing the failed scarcity
 trade. A histogram-gradient-boosting regressor estimates
 
-$$
+```math
 m_h
 =
 \mathbb E\!\left[S_h\mid\mathcal F_{D-1,09{:}00}\right],
-$$
+```
 
 using a clipped training target, learning rate 0.04, at most 15 leaf nodes,
 L2 regularization 20, and 120 boosting iterations. It adds lagged DA and
@@ -271,20 +271,20 @@ target day's DA clearing price remains unavailable.
 
 For each operating day, the frozen rule is
 
-$$
+```math
 h_D^\star=\arg\min_{h\in D}\widehat m_h,
 \qquad
 I_D=\mathbf 1\!\left\{\widehat m_{h_D^\star}\le -3\right\},
-$$
+```
 
 and the net P&L of the 1 MW virtual-supply position is
 
-$$
+```math
 \Pi_D
 =
 I_D\left(P_{h_D^\star}^{DA}-P_{h_D^\star}^{RT}
 -2\ \mathrm{USD/MWh}\right).
-$$
+```
 
 The model refits at year boundaries: through 2023 for 2024 validation, through
 2024 for the 2025 shadow period, and through 2025 for the 2026 lockbox. The rule
