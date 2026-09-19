@@ -98,10 +98,6 @@ The original work explored sentence embeddings, HMM states, clustering, SMOTE, r
 
 This repository is rewritten from scratch around one falsifiable question. It removes retrospective HMM labels, uses an observable future return, enforces chronological boundaries by outcome date, and makes the market-only ablation the central comparison.
 
-## Attribution
-
-The idea originated in a Georgia Tech group project with Aryan Gupta, Mengwei Sun, Eddy Wang, Huopu Zhang, and Jingyi Zhang. The [original team report website](https://github.gatech.edu/pages/ewang328/ML_Project_Website/) credited Jingyi Zhang with preprocessing methods and machine-learning algorithms/models. This independent repository redesigns and reimplements the study; it does not represent the original team repository or claim sole authorship of the course work.
-
 ## Disclaimer
 
 For research and educational use only. Nothing in this repository is investment advice.
